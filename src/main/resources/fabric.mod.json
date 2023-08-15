@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "anvilfix",
+  "version": "${version}",
+  "name": "AnvilFix",
+  "description": "Fixes and rebalaces anvils.",
+  "authors": [
+    "googler_ooeric"
+  ],
+  "contact": {
+    "website": "https://modrinth.com/mod/anvilfix"
+  },
+  "license": "MIT",
+  "icon": "assets/anvilfix/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.googlerooeric.anvilfix.client.AnvilfixClient"
+    ],
+    "main": [
+      "com.googlerooeric.anvilfix.Anvilfix"
+    ]
+  },
+  "mixins": [
+    "anvilfix.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.22",
+    "fabric": "*",
+    "minecraft": "1.19"
+  }
+}
