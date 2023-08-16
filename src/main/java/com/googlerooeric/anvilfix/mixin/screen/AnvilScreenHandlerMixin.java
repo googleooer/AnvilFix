@@ -1,11 +1,9 @@
 package com.googlerooeric.anvilfix.mixin.screen;
 
-import com.googlerooeric.anvilfix.Anvilfix;
-import net.minecraft.block.BlockState;
+import com.googlerooeric.anvilfix.AnvilFix;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
@@ -21,13 +19,11 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.*;
 
-import static net.minecraft.screen.AnvilScreenHandler.getNextCost;
 import static net.minecraft.util.math.MathHelper.floor;
 
 @Mixin(AnvilScreenHandler.class)
 public abstract class AnvilScreenHandlerMixin
         extends ForgingScreenHandler {
-    //TODO: Remove too expensive for repairing, raise too expensive limit
 
 
     @Shadow @Final private Property levelCost;
@@ -41,7 +37,7 @@ public abstract class AnvilScreenHandlerMixin
     }
 
     private static final Map<Enchantment, Integer> ENCHANTMENT_COST_MAP = new HashMap<>();
-    private static final Map<Enchantment, List<Enchantment>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
+    private static Map<Enchantment, List<Enchantment>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
     static {
         // Populate the map with enchantments and their costs
@@ -66,9 +62,7 @@ public abstract class AnvilScreenHandlerMixin
         ENCHANTMENT_COST_MAP.put(Enchantments.LURE, 3);
 
 
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SMITE, Arrays.asList(Enchantments.SHARPNESS, Enchantments.BANE_OF_ARTHROPODS));
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SHARPNESS, Arrays.asList(Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.BANE_OF_ARTHROPODS, Arrays.asList(Enchantments.SMITE, Enchantments.SHARPNESS));
+
     }
 
     private boolean areEnchantmentsIncompatible(Enchantment e1, Enchantment e2) {
@@ -89,15 +83,22 @@ public abstract class AnvilScreenHandlerMixin
     @Overwrite
     public void updateResult() {
 
+        ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
+
+        //Populate compatibility map, special case for mending gamerule
         this.context.run((world, pos) -> {
-            Anvilfix.LOGGER.info("Mending works with unbreaking: " + world.getGameRules().getBoolean(Anvilfix.MENDING_WORKS_WITH_UNBREAKING));
-            Anvilfix.LOGGER.info("Is client?: " + world.isClient());
-            if(!(world.getGameRules().getBoolean(Anvilfix.MENDING_WORKS_WITH_UNBREAKING))){
+            //Anvilfix.LOGGER.info("Mending works with unbreaking: " + world.getGameRules().getBoolean(Anvilfix.MENDING_WORKS_WITH_UNBREAKING));
+            //Anvilfix.LOGGER.info("Is client?: " + world.isClient());
+            if(!(world.getGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING))){
                 ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.MENDING, List.of(Enchantments.UNBREAKING));
                 ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.UNBREAKING, List.of(Enchantments.MENDING));
             }
         });
+
+        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SMITE, Arrays.asList(Enchantments.SHARPNESS, Enchantments.BANE_OF_ARTHROPODS));
+        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SHARPNESS, Arrays.asList(Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
+        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.BANE_OF_ARTHROPODS, Arrays.asList(Enchantments.SMITE, Enchantments.SHARPNESS));
 
 
 
@@ -218,10 +219,10 @@ public abstract class AnvilScreenHandlerMixin
                                 if(currentEnchants.containsKey(enchantment) && finalLevel > currentEnchants.get(enchantment)){
                                     totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * finalLevel;
                                 } else if(!currentEnchants.containsKey(enchantment)){
-                                    totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * newLevel;
+                                    totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * Math.max(finalLevel, newLevel);
                                 }
 
-                                currentEnchants.put(enchantment, newEnchants.getOrDefault(enchantment, finalLevel));
+                                currentEnchants.put(enchantment, Math.max(finalLevel, newLevel));
                             }
                         }
                     }

@@ -15,10 +15,10 @@
   "environment": "*",
   "entrypoints": {
     "client": [
-      "com.googlerooeric.anvilfix.client.AnvilfixClient"
+      "com.googlerooeric.anvilfix.client.AnvilFixClient"
     ],
     "main": [
-      "com.googlerooeric.anvilfix.Anvilfix"
+      "com.googlerooeric.anvilfix.AnvilFix"
     ]
   },
   "mixins": [
@@ -27,6 +27,6 @@
   "depends": {
     "fabricloader": ">=0.14.22",
     "fabric": "*",
-    "minecraft": "1.19"
+    "minecraft": ">=1.19"
   }
 }
