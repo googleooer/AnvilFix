@@ -32,7 +32,7 @@ I've been increasingly frustrated with the balance of Survival mode, especially 
 
 ### Optional: Mending Rebalance
 
-- I know this change is probably gonna be controversial, so it's an optional feature, enabled by default (mendingWorksWithUnbreaking gamerule)
+- I know this change is probably gonna be controversial, so it's an optional feature (mendingWorksWithUnbreaking gamerule, false by default)
 - I've always felt like Mending is Mojang's band-aid fix to the anvil repairing issue, while also being overpowered and obtainable too early in the game. With the anvil issues resolved, a rebalance seems appropriate.
 - Mending and Unbreaking are now incompatible, providing players with two choices:
   - Choose Unbreaking if you want extended equipment durability, but need to manually repair it through an anvil.
