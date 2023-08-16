@@ -40,12 +40,12 @@ public abstract class AnvilScreenHandlerMixin
     private static Map<Enchantment, List<Enchantment>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
     static {
-        // Populate the map with enchantments and their costs
+        // Populate the map with enchantments and their base costs
         // Example: ENCHANTMENT_COST_MAP.put(Enchantments.SHARPNESS, 2);
         ENCHANTMENT_COST_MAP.put(Enchantments.SHARPNESS, 2);
         ENCHANTMENT_COST_MAP.put(Enchantments.EFFICIENCY, 2);
         ENCHANTMENT_COST_MAP.put(Enchantments.MENDING, 15);
-        ENCHANTMENT_COST_MAP.put(Enchantments.UNBREAKING, 4);
+        ENCHANTMENT_COST_MAP.put(Enchantments.UNBREAKING, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.FORTUNE, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.FIRE_ASPECT, 4);
         ENCHANTMENT_COST_MAP.put(Enchantments.SWEEPING, 2);
@@ -66,10 +66,6 @@ public abstract class AnvilScreenHandlerMixin
     }
 
     private boolean areEnchantmentsIncompatible(Enchantment e1, Enchantment e2) {
-        // Define incompatible pairs
-
-
-
         // Check if the pair exists in the map
         return ENCHANTMENT_COMPATIBILITY_MAP.getOrDefault(e1, Collections.emptyList()).contains(e2);
     }
@@ -85,11 +81,9 @@ public abstract class AnvilScreenHandlerMixin
 
         ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
-
-        //Populate compatibility map, special case for mending gamerule
+        // TODO: jesus fucking christ this code feels so wrong
+        // Populate compatibility map, if mendingWorksWithUnbreaking is on, don't add these
         this.context.run((world, pos) -> {
-            //Anvilfix.LOGGER.info("Mending works with unbreaking: " + world.getGameRules().getBoolean(Anvilfix.MENDING_WORKS_WITH_UNBREAKING));
-            //Anvilfix.LOGGER.info("Is client?: " + world.isClient());
             if(!(world.getGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING))){
                 ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.MENDING, List.of(Enchantments.UNBREAKING));
                 ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.UNBREAKING, List.of(Enchantments.MENDING));
@@ -102,10 +96,8 @@ public abstract class AnvilScreenHandlerMixin
 
 
 
-        // Get the input item
+        // Get the input item and initialize the level cost to 0
         ItemStack inputItem = this.input.getStack(0);
-
-        // Initialize level cost to 0
         this.levelCost.set(0);
         int totalCost = 0;
 
@@ -128,7 +120,7 @@ public abstract class AnvilScreenHandlerMixin
         // Reset the repair item usage
         this.repairItemUsage = 0;
 
-        // If the enchanting item is not empty, we need to handle enchanting/repairing
+        // If the enchanting item isn't empty, handle enchanting/repairing
         if (!enchantingItem.isEmpty()) {
 
             // Check if the enchanting item and input item are enchanted books
@@ -136,22 +128,26 @@ public abstract class AnvilScreenHandlerMixin
             boolean isInputItemBook = inputItem.isOf(Items.ENCHANTED_BOOK) && !EnchantedBookItem.getEnchantmentNbt(inputItem).isEmpty();
 
 
-            // If the input item is damageable and can be repaired by the enchanting item, handle repairing
+            // If the input item is damageable and can be repaired by the second slot item, handle repairing
             if (resultItem.isDamageable() && resultItem.getItem().canRepair(inputItem, enchantingItem)) {
                 int repairCount = 0;
+                // Calculate the amount to repair, capped at a quarter of the maximum durability
                 int repairAmount = Math.min(resultItem.getDamage(), resultItem.getMaxDamage() / 4);
 
+                // While there's still damage to repair and there are more repairing items available
                 while (repairAmount > 0 && repairCount < enchantingItem.getCount()) {
+
                     int newDamage = resultItem.getDamage() - repairAmount;
                     resultItem.setDamage(newDamage);
-                    totalCost += 2; // Linear cost of 3 * material amount
+                    totalCost += 2; // Linear cost of 2 * material amount
                     repairAmount = Math.min(resultItem.getDamage(), resultItem.getMaxDamage() / 4);
                     repairCount++;
                 }
-
+                // Why do we even need to keep repairItemUsage??? It's entirely obsolete, we don't do cost accumulation anymore
+                //TODO: get rid of repair count and repair item usage
                 this.repairItemUsage = repairCount;
             } else {
-                // If the enchanting item is not an enchanted book or the input item is not damageable, set the output to empty and return
+                // If the input item isn't a book, and the enchanting item isn't an enchanted book or the input item is not damageable, set the output to empty and return
                 if (!(isEnchantedBook || resultItem.getItem() == enchantingItem.getItem() && resultItem.isDamageable()) && !isInputItemBook) {
                     this.output.setStack(0, ItemStack.EMPTY);
                     this.levelCost.set(0);
@@ -189,7 +185,7 @@ public abstract class AnvilScreenHandlerMixin
                         }
                     }
                 }
-                else // If the input item is not an enchanted book, handle enchanting
+                else // If the input item is not an enchanted book, handle regular enchanting
                 {
 
 
@@ -221,7 +217,7 @@ public abstract class AnvilScreenHandlerMixin
                                 } else if(!currentEnchants.containsKey(enchantment)){
                                     totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * Math.max(finalLevel, newLevel);
                                 }
-
+                                // What the fuck???
                                 currentEnchants.put(enchantment, Math.max(finalLevel, newLevel));
                             }
                         }
@@ -229,6 +225,13 @@ public abstract class AnvilScreenHandlerMixin
                 }
             }
         }
+
+        // Riiise anddd shiinee, Mister Freeman.
+        // Rise and... shine. Not that I... wish to imply you have been... sleeping, on the job.
+        // No one is more *deserving* of a rest... and all the effort in the worrrllldd would have gone to waste, until...
+        // Well... let's just say your hour has... come again.
+        // The right man in the wrong place, can make *all* the diff-erence in the worldd...
+        // So, wake up, Mister Freeman... Wake up and, smell the ashesssss
 
         // If the enchanting item is empty and the new name is null or the same as the input item's name, set the output to empty and return
         if (enchantingItem.isEmpty() && (this.newItemName == null || this.newItemName.equals(inputItem.getName().getString()))){
@@ -238,7 +241,7 @@ public abstract class AnvilScreenHandlerMixin
         }
 
         // If the new name is blank and the input item has a custom name, remove the custom name and add the cost
-        if (StringUtils.isBlank(this.newItemName)) {
+        if (StringUtils.isBlank(this.newItemName) || this.newItemName == null) {
             if(inputItem.hasCustomName()){
                 totalCost += 2;
                 resultItem.removeCustomName();
@@ -250,6 +253,7 @@ public abstract class AnvilScreenHandlerMixin
             resultItem.setCustomName(Text.literal(this.newItemName));
         }
 
+
         // Set the level cost to the total cost
         this.levelCost.set(totalCost);
 
@@ -258,7 +262,7 @@ public abstract class AnvilScreenHandlerMixin
             resultItem = ItemStack.EMPTY;
         }
 
-        // If the result item is not empty, set the repair cost and enchantments
+        // If the result item isn't empty, set the repair cost and enchantments
         if (!resultItem.isEmpty()) {
             int repairCost = Math.max(resultItem.getRepairCost(), enchantingItem.isEmpty() ? 0 : enchantingItem.getRepairCost());
             resultItem.setRepairCost(repairCost);
