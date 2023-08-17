@@ -37,7 +37,7 @@ I've been increasingly frustrated with the balance of Survival mode, especially 
 - Mending and Unbreaking are now incompatible, providing players with two choices:
   - Choose Unbreaking if you want extended equipment durability, but need to manually repair it through an anvil.
   - Choose Mending for automatic equipment repair via XP, but with standard uses.
-- Buffed Mending: Mending now works on unequipped items as well. The hierarchy of repair priority is as follows: Equipped items take priority over unequipped ones, and damaged items are prioritized over those with less damage. Damaged unequipped items are given priority over nearly fully repaired equipped items.
+~~- Buffed Mending: Mending now works on unequipped items as well. The hierarchy of repair priority is as follows: Equipped items take priority over unequipped ones, and damaged items are prioritized over those with less damage. Damaged unequipped items are given priority over nearly fully repaired equipped items.~~ Not implemented yet.
 
 ## Disclaimer
 
