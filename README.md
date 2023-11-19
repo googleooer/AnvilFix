@@ -29,6 +29,7 @@ I've been increasingly frustrated with the balance of Survival mode, especially 
 ### Renaming
 
 - Renaming now has a flat cost of 2 XP.
+- Renaming when you cannot perform an item merge is no longer possible (to stop deletion of said item).
 
 ### Optional: Mending Rebalance
 
