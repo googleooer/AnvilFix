@@ -12,12 +12,11 @@ import net.minecraft.screen.*;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.minecraft.util.math.MathHelper.floor;
 
@@ -37,7 +36,8 @@ public abstract class AnvilScreenHandlerMixin
     }
 
     private static final Map<Enchantment, Integer> ENCHANTMENT_COST_MAP = new HashMap<>();
-    private static Map<Enchantment, List<Enchantment>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
+
+    private static final Set<Set<Enchantment>> ENCHANTMENT_INCOMPATIBILITY_SETS = new HashSet<>();
 
     static {
         // Populate the map with enchantments and their base costs
@@ -61,16 +61,50 @@ public abstract class AnvilScreenHandlerMixin
         ENCHANTMENT_COST_MAP.put(Enchantments.LOOTING, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.LURE, 3);
 
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.PROTECTION, Enchantments.PROJECTILE_PROTECTION, Enchantments.BLAST_PROTECTION, Enchantments.FIRE_PROTECTION));
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.FORTUNE, Enchantments.SILK_TOUCH));
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.FROST_WALKER, Enchantments.DEPTH_STRIDER));
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.INFINITY, Enchantments.MENDING));
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.MULTISHOT, Enchantments.PIERCING));
 
+        // Loyalty and channeling are allowed together; See exception below
+        ENCHANTMENT_INCOMPATIBILITY_SETS.add(Set.of(Enchantments.LOYALTY, Enchantments.RIPTIDE, Enchantments.CHANNELING));
 
     }
 
     private boolean areEnchantmentsIncompatible(Enchantment e1, Enchantment e2) {
-        // Check if the pair exists in the map
-        return ENCHANTMENT_COMPATIBILITY_MAP.getOrDefault(e1, Collections.emptyList()).contains(e2);
+        if(e1.equals(e2)) { return false; }
+
+        // Custom exception for loyalty and channeling, which can go together
+        if(Set.of(e1, e2).containsAll(Set.of(Enchantments.LOYALTY, Enchantments.CHANNELING))) {
+            return false;
+        }
+
+        // Custom rule for mending and unbreaking because creating a new incompatibility set failed
+        if(Set.of(e1, e2).containsAll(Set.of(Enchantments.MENDING, Enchantments.UNBREAKING))) {
+            return !doesMendingWorkWithUnbreaking();
+        }
+
+        // Check if both enchants are in one incompatibility set
+        for(var set : ENCHANTMENT_INCOMPATIBILITY_SETS) {
+            if(set.contains(e1)) {
+                return set.contains(e2);
+            }
+        }
+
+        return false;
     }
 
+    private boolean doesMendingWorkWithUnbreaking() {
+        var result = new AtomicBoolean(false);
 
+        this.context.run((world, pos) -> {
+            result.set(world.getGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING));
+        });
+
+        return result.get();
+    }
 
     /**
      * @author googler_ooeric
@@ -78,23 +112,6 @@ public abstract class AnvilScreenHandlerMixin
      */
     @Overwrite
     public void updateResult() {
-
-        ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
-
-        // TODO: jesus fucking christ this code feels so wrong
-        // Populate compatibility map, if mendingWorksWithUnbreaking is on, don't add these
-        this.context.run((world, pos) -> {
-            if(!(world.getGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING))){
-                ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.MENDING, List.of(Enchantments.UNBREAKING));
-                ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.UNBREAKING, List.of(Enchantments.MENDING));
-            }
-        });
-
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SMITE, Arrays.asList(Enchantments.SHARPNESS, Enchantments.BANE_OF_ARTHROPODS));
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.SHARPNESS, Arrays.asList(Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
-        ENCHANTMENT_COMPATIBILITY_MAP.put(Enchantments.BANE_OF_ARTHROPODS, Arrays.asList(Enchantments.SMITE, Enchantments.SHARPNESS));
-
-
 
         // Get the input item and initialize the level cost to 0
         ItemStack inputItem = this.input.getStack(0);
