@@ -10,12 +10,16 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.*;
 import net.minecraft.text.Text;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.component.DataComponentTypes;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 
 import java.util.*;
 
@@ -36,8 +40,8 @@ public abstract class AnvilScreenHandlerMixin
         super(type, syncId, playerInventory, context);
     }
 
-    private static final Map<Enchantment, Integer> ENCHANTMENT_COST_MAP = new HashMap<>();
-    private static Map<Enchantment, List<Enchantment>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
+    private static final Map<RegistryKey<Enchantment>, Integer> ENCHANTMENT_COST_MAP = new HashMap<>();
+    private static Map<RegistryKey<Enchantment>, List<RegistryKey<Enchantment>>> ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
     static {
         // Populate the map with enchantments and their base costs
@@ -48,7 +52,7 @@ public abstract class AnvilScreenHandlerMixin
         ENCHANTMENT_COST_MAP.put(Enchantments.UNBREAKING, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.FORTUNE, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.FIRE_ASPECT, 4);
-        ENCHANTMENT_COST_MAP.put(Enchantments.SWEEPING, 2);
+        ENCHANTMENT_COST_MAP.put(Enchantments.SWEEPING_EDGE, 2);
         ENCHANTMENT_COST_MAP.put(Enchantments.INFINITY, 8);
         ENCHANTMENT_COST_MAP.put(Enchantments.SILK_TOUCH, 4);
         ENCHANTMENT_COST_MAP.put(Enchantments.THORNS, 2);
@@ -60,12 +64,9 @@ public abstract class AnvilScreenHandlerMixin
         ENCHANTMENT_COST_MAP.put(Enchantments.KNOCKBACK, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.LOOTING, 3);
         ENCHANTMENT_COST_MAP.put(Enchantments.LURE, 3);
-
-
-
     }
 
-    private boolean areEnchantmentsIncompatible(Enchantment e1, Enchantment e2) {
+    private boolean areEnchantmentsIncompatible(RegistryKey<Enchantment> e1, RegistryKey<Enchantment> e2) {
         // Check if the pair exists in the map
         return ENCHANTMENT_COMPATIBILITY_MAP.getOrDefault(e1, Collections.emptyList()).contains(e2);
     }
@@ -115,7 +116,7 @@ public abstract class AnvilScreenHandlerMixin
         ItemStack enchantingItem = this.input.getStack(1);
 
         // Get the current enchantments on the input item
-        Map<Enchantment, Integer> currentEnchants = EnchantmentHelper.get(resultItem);
+        Set<Object2IntMap.Entry<RegistryEntry<Enchantment>>> currentEnchants = EnchantmentHelper.getEnchantments(resultItem).getEnchantmentEntries();
 
         // Reset the repair item usage
         this.repairItemUsage = 0;
@@ -124,8 +125,8 @@ public abstract class AnvilScreenHandlerMixin
         if (!enchantingItem.isEmpty()) {
 
             // Check if the enchanting item and input item are enchanted books
-            boolean isEnchantedBook = enchantingItem.isOf(Items.ENCHANTED_BOOK) && !EnchantedBookItem.getEnchantmentNbt(enchantingItem).isEmpty();
-            boolean isInputItemBook = inputItem.isOf(Items.ENCHANTED_BOOK) && !EnchantedBookItem.getEnchantmentNbt(inputItem).isEmpty();
+            boolean isEnchantedBook = enchantingItem.isOf(Items.ENCHANTED_BOOK) && enchantingItem.getEnchantments().getSize() != 0;
+            boolean isInputItemBook = inputItem.isOf(Items.ENCHANTED_BOOK) && inputItem.getEnchantments().getSize() != 0;
 
 
             // If the input item is damageable and can be repaired by the second slot item, handle repairing
@@ -155,18 +156,18 @@ public abstract class AnvilScreenHandlerMixin
                 }
 
                 // Get the enchantments on the enchanting item
-                Map<Enchantment, Integer> newEnchants = EnchantmentHelper.get(enchantingItem);
+                Set<Object2IntMap.Entry<RegistryEntry<Enchantment>>> newEnchants = EnchantmentHelper.getEnchantments(enchantingItem).getEnchantmentEntries();
 
 
                 if (isInputItemBook && isEnchantedBook) // If both the input item and the enchanting item are enchanted books, handle merging
                 {
-                    Map<Enchantment, Integer> book2Enchants = new HashMap<>(newEnchants);
-                    for (Enchantment e : currentEnchants.keySet()) {
+                    Map<RegistryKey<Enchantment>, Integer> book2Enchants = new HashMap<>(newEnchants);
+                    for (Object2IntMap.Entry<RegistryEntry<Enchantment>> e : currentEnchants) {
                         if (book2Enchants.containsKey(e)) {
                             int currentLevel = currentEnchants.get(e);
                             int book2Level = book2Enchants.get(e);
-                            if (currentLevel <= book2Level && currentLevel + 1 <= e.getMaxLevel()) {
-                                currentEnchants.put(e, currentLevel + 1);
+                            if (currentLevel <= book2Level && currentLevel + 1 <= e.getKey().value().getMaxLevel()) {
+                                currentEnchants.add(e, currentLevel + 1);
                                 totalCost += ENCHANTMENT_COST_MAP.getOrDefault(e, 2) * (currentLevel + 1);
                             }
 
@@ -174,22 +175,20 @@ public abstract class AnvilScreenHandlerMixin
                         }
                     }
 
-                    for (Map.Entry<Enchantment, Integer> entry : book2Enchants.entrySet()) {
-                        Enchantment enchantment = entry.getKey();
+                    for (Object2IntMap.Entry<RegistryKey<Enchantment>, Integer> entry : book2Enchants.entrySet()) {
+                        RegistryKey<Enchantment> enchantment = entry.getKey();
                         Integer level = entry.getValue();
                         boolean compatible = currentEnchants.entrySet().stream()
                                 .noneMatch(existingEnchant -> areEnchantmentsIncompatible(existingEnchant.getKey(), enchantment));
                         if (compatible) {
-                            currentEnchants.put(enchantment, level);
+                            currentEnchants.add(entry);
                             totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * level;
                         }
                     }
                 }
                 else // If the input item is not an enchanted book, handle regular enchanting
                 {
-
-
-                    for (Enchantment enchantment : newEnchants.keySet()) {
+                    for (RegistryKey<Enchantment> enchantment : newEnchants.keySet()) {
                         if (enchantment == null) continue;
 
                         int currentLevel = currentEnchants.getOrDefault(enchantment, 0);
@@ -197,7 +196,7 @@ public abstract class AnvilScreenHandlerMixin
                         int finalLevel;
 
                         // If the current level and new level are the same, increment the final level
-                        if (currentLevel <= newLevel && currentLevel < enchantment.getMaxLevel()) {
+                        if (currentLevel <= newLevel && currentLevel < enchantment.getKey().getMaxLevel()) {
                             finalLevel = currentLevel + 1;
                         } else {
                             finalLevel = Math.max(newLevel, currentLevel);
@@ -218,7 +217,7 @@ public abstract class AnvilScreenHandlerMixin
                                     totalCost += ENCHANTMENT_COST_MAP.getOrDefault(enchantment, 2) * Math.max(finalLevel, newLevel);
                                 }
                                 // What the fuck???
-                                currentEnchants.put(enchantment, Math.max(finalLevel, newLevel));
+                                currentEnchants.add(enchantment, Math.max(finalLevel, newLevel));
                             }
                         }
                     }
@@ -242,15 +241,15 @@ public abstract class AnvilScreenHandlerMixin
 
         // If the new name is blank and the input item has a custom name, remove the custom name and add the cost
         if (StringUtils.isBlank(this.newItemName) || this.newItemName == null) {
-            if(inputItem.hasCustomName()){
+            if(inputItem.contains(DataComponentTypes.CUSTOM_NAME)){
                 totalCost += 2;
-                resultItem.removeCustomName();
+                resultItem.remove(DataComponentTypes.CUSTOM_NAME);
             }
         }
         // If the new name is not null and different from the input item's name, set the custom name and add the cost
         else if (this.newItemName != null && !this.newItemName.equals(inputItem.getName().getString())) {
             totalCost += 2; // Renaming always costs 2 xp
-            resultItem.setCustomName(Text.literal(this.newItemName));
+            resultItem.set(DataComponentTypes.CUSTOM_NAME, Text.literal(this.newItemName));
         }
 
 
@@ -264,9 +263,9 @@ public abstract class AnvilScreenHandlerMixin
 
         // If the result item isn't empty, set the repair cost and enchantments
         if (!resultItem.isEmpty()) {
-            int repairCost = Math.max(resultItem.getRepairCost(), enchantingItem.isEmpty() ? 0 : enchantingItem.getRepairCost());
-            resultItem.setRepairCost(repairCost);
-            EnchantmentHelper.set(currentEnchants, resultItem);
+            int repairCost = Math.max(resultItem.getOrDefault(DataComponentTypes.REPAIR_COST, Integer.valueOf(0)).intValue(), enchantingItem.isEmpty() ? 0 : enchantingItem.getOrDefault(DataComponentTypes.REPAIR_COST, Integer.valueOf(0)).intValue());
+            resultItem.set(DataComponentTypes.REPAIR_COST, repairCost);
+            EnchantmentHelper.set(resultItem, currentEnchants);
         }
 
         // Set the output stack to the result item and send updates
