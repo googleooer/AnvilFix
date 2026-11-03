@@ -53,6 +53,8 @@ public final class ClientSmoke {
         }
         // Connect only once loading is over: joining mid resource reload crashes the renderer
         if (!connecting) {
+            // Several test clients run side by side; one that loses focus would open the pause menu and stall
+            minecraft.options.pauseOnLostFocus = false;
             if (TestClient.overlay(minecraft) == null && TestClient.screen(minecraft) != null && minecraft.level == null) {
                 connecting = true;
                 SelfTest.LOGGER.info("ANVILFIX_INGAME connecting to localhost:{}", IngameHost.PORT);
