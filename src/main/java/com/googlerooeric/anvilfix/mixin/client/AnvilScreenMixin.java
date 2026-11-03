@@ -9,7 +9,11 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 public abstract class AnvilScreenMixin {
 
     // The screen labels any cost of 40+ "Too Expensive!" on its own, even though the server now allows it
+    //? if >=26.1 {
+    /*@ModifyConstant(method = "extractLabels", constant = @Constant(intValue = 40))
+    *///?} else {
     @ModifyConstant(method = "renderLabels", constant = @Constant(intValue = 40))
+    //?}
     private int anvilfix$removeTooExpensiveLabel(int tooExpensiveCost) {
         return Integer.MAX_VALUE;
     }
