@@ -61,7 +61,8 @@ test_node() { # node lane
                 echo "$node	fail	install" >> "$results"; echo "$node install failed"; return
             fi
             if [ -f "$dir/run.sh" ]; then
-                echo "-Danvilfix.selftest=true" >> "$dir/user_jvm_args.txt"
+                # The installer's file doesn't end in a newline; without one this would land on its last comment line
+                printf '\n-Danvilfix.selftest=true\n' >> "$dir/user_jvm_args.txt"
                 launch=(env "PATH=$(dirname "$java"):$PATH" bash run.sh nogui)
             else
                 launch=("$java" -Danvilfix.selftest=true -jar "$(cd "$dir" && ls *.jar | grep -i -E 'shim|server' | head -1)" nogui)

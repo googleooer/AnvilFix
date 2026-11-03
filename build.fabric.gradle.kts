@@ -1,5 +1,6 @@
 plugins {
     id("net.fabricmc.fabric-loom-remap")
+    id("com.modrinth.minotaur")
 }
 
 val minecraft = stonecutter.current.version
@@ -116,11 +117,31 @@ val selftestJar by tasks.registering(Jar::class) {
     from(selftest.output)
     exclude("anvilfix_selftest.mixins.json", "com/googlerooeric/anvilfix/selftest/mixin/**")
     filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
-        filter { line -> if (line.contains("anvilfix_selftest.mixins.json")) "" else line }
+        // drop the test mod's mixin config, including NeoForge's [[mixins]] table header
+        filter { line -> if (line.contains("anvilfix_selftest.mixins.json") || line.trim() == "[[mixins]]") "" else line }
     }
 }
 
 val remapSelftestJar by tasks.registering(net.fabricmc.loom.task.RemapJarTask::class) {
     archiveClassifier = "selftest"
     inputFile = selftestJar.flatMap { it.archiveFile }
+}
+
+// Upload to Modrinth: MODRINTH_TOKEN=... ./gradlew modrinth (every node) or :<node>:modrinth. Nothing is uploaded
+// without the token.
+modrinth {
+    token = providers.environmentVariable("MODRINTH_TOKEN")
+    projectId = "anvilfix"
+    versionNumber = project.version.toString()
+    versionName = "AnvilFix ${property("mod_version")} (Fabric $minecraft)"
+    versionType = "release"
+    uploadFile.set(tasks.remapJar)
+    gameVersions.add(minecraft)
+    loaders.add("fabric")
+    // This version's section of CHANGELOG.md
+    changelog = rootProject.file("CHANGELOG.md").readText()
+        .substringAfter("## ${property("mod_version")}\n").substringBefore("\n## ").trim()
+    dependencies {
+        required.project("fabric-api")
+    }
 }

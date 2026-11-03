@@ -1,6 +1,7 @@
 // Forge 1.19 - 1.20.1, through ModDevGradle's legacy plugin (these versions use SRG names at runtime)
 plugins {
     id("net.neoforged.moddev.legacyforge")
+    id("com.modrinth.minotaur")
 }
 
 val minecraft = stonecutter.current.version
@@ -131,11 +132,28 @@ val selftestJar by tasks.registering(Jar::class) {
     from(selftest.output)
     exclude("anvilfix_selftest.mixins.json", "com/googlerooeric/anvilfix/selftest/mixin/**")
     filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
-        filter { line -> if (line.contains("anvilfix_selftest.mixins.json")) "" else line }
+        // drop the test mod's mixin config, including NeoForge's [[mixins]] table header
+        filter { line -> if (line.contains("anvilfix_selftest.mixins.json") || line.trim() == "[[mixins]]") "" else line }
     }
 }
 
 obfuscation {
     // The main source set only supplies the classpath for remapping inherited members
     reobfuscate(selftestJar, sourceSets.main.get()) { archiveClassifier = "selftest" }
+}
+
+// Upload to Modrinth: MODRINTH_TOKEN=... ./gradlew modrinth (every node) or :<node>:modrinth. Nothing is uploaded
+// without the token.
+modrinth {
+    token = providers.environmentVariable("MODRINTH_TOKEN")
+    projectId = "anvilfix"
+    versionNumber = project.version.toString()
+    versionName = "AnvilFix ${property("mod_version")} (Forge $minecraft)"
+    versionType = "release"
+    uploadFile.set(tasks.named("reobfJar"))
+    gameVersions.add(minecraft)
+    loaders.add("forge")
+    // This version's section of CHANGELOG.md
+    changelog = rootProject.file("CHANGELOG.md").readText()
+        .substringAfter("## ${property("mod_version")}\n").substringBefore("\n## ").trim()
 }

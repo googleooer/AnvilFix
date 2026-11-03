@@ -3,6 +3,7 @@ plugins {
     // ForgeGradle registers Eclipse run configurations next to every run task
     eclipse
     id("net.minecraftforge.gradle")
+    id("com.modrinth.minotaur")
 }
 
 val mcVersion = stonecutter.current.version
@@ -158,6 +159,23 @@ val selftestJar by tasks.registering(Jar::class) {
     from(selftest.output)
     exclude("anvilfix_selftest.mixins.json", "com/googlerooeric/anvilfix/selftest/mixin/**")
     filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
-        filter { line -> if (line.contains("anvilfix_selftest.mixins.json")) "" else line }
+        // drop the test mod's mixin config, including NeoForge's [[mixins]] table header
+        filter { line -> if (line.contains("anvilfix_selftest.mixins.json") || line.trim() == "[[mixins]]") "" else line }
     }
+}
+
+// Upload to Modrinth: MODRINTH_TOKEN=... ./gradlew modrinth (every node) or :<node>:modrinth. Nothing is uploaded
+// without the token.
+modrinth {
+    token = providers.environmentVariable("MODRINTH_TOKEN")
+    projectId = "anvilfix"
+    versionNumber = project.version.toString()
+    versionName = "AnvilFix ${property("mod_version")} (Forge $mcVersion)"
+    versionType = "release"
+    uploadFile.set(tasks.jar)
+    gameVersions.add(mcVersion)
+    loaders.add("forge")
+    // This version's section of CHANGELOG.md
+    changelog = rootProject.file("CHANGELOG.md").readText()
+        .substringAfter("## ${property("mod_version")}\n").substringBefore("\n## ").trim()
 }
