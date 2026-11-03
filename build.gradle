@@ -33,6 +33,14 @@ loom {
             vmArg "-Dfabric-api.gametest.report-file=${project.buildDir}/gametest/junit.xml"
             runDir "build/gametest"
         }
+        // Starts the real client, checks the client mixins apply, then quits
+        clientSmoke {
+            client()
+            name "Client Smoke Test"
+            source sourceSets.gametest
+            vmArg "-Danvilfix.smoke=true"
+            runDir "run"
+        }
     }
 }
 

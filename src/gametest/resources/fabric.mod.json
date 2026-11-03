@@ -7,6 +7,9 @@
   "entrypoints": {
     "fabric-gametest": [
       "com.googlerooeric.anvilfix.gametest.AnvilFixGameTests"
+    ],
+    "client": [
+      "com.googlerooeric.anvilfix.gametest.ClientSmokeTest"
     ]
   },
   "mixins": [
