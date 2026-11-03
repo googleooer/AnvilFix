@@ -9,10 +9,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Stands in for another mod injecting into the vanilla createResult body, like AdventureZ does (AnvilFix-issues#1).
  * If AnvilFix replaced the method instead of injecting, this would fail to apply and crash the server.
+ * NeoForge 1.21.11+ moves the vanilla body into createResultInternal, so either name may hold it.
  */
 @Mixin(AnvilMenu.class)
 public abstract class ThirdPartyAnvilMixin {
-    @Inject(method = "createResult", require = 1, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;copy()Lnet/minecraft/world/item/ItemStack;"))
+    @Inject(method = {"createResult", "createResultInternal"}, require = 1, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;copy()Lnet/minecraft/world/item/ItemStack;"))
     private void anvilfixSelftest$beforeCopy(CallbackInfo ci) {
     }
 }

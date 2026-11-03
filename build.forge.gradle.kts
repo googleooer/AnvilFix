@@ -63,11 +63,13 @@ minecraft {
             // In dev there's no jar manifest to list the mixin configs, so pass them like ForgeGradle 6 did
             args("--mixin.config", "anvilfix.mixins.json", "--mixin.config", "anvilfix_selftest.mixins.json")
             // Forge before 1.20.6 reads them from MOD_CLASSES, which its run configs leave to the build tool to set
-            environment("MOD_CLASSES", provider {
-                listOf("anvilfix" to sourceSets.main.get(), "anvilfix_selftest" to selftest).flatMap { (id, set) ->
-                    (set.output.classesDirs.files + listOfNotNull(set.output.resourcesDir)).map { "$id%%${it.absolutePath}" }
-                }.joinToString(File.pathSeparator)
-            })
+            if (stonecutter.eval(mcVersion, "<1.20.6")) {
+                environment("MOD_CLASSES", provider {
+                    listOf("anvilfix" to sourceSets.main.get(), "anvilfix_selftest" to selftest).flatMap { (id, set) ->
+                        (set.output.classesDirs.files + listOfNotNull(set.output.resourcesDir)).map { "$id%%${it.absolutePath}" }
+                    }.joinToString(File.pathSeparator)
+                })
+            }
         }
         register("server") {
             args("--nogui")
