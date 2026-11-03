@@ -15,6 +15,8 @@ base.archivesName = property("archives_base_name").toString()
 val hostTest = findProperty("anvilfix.host") == "true"
 val ingame = findProperty("anvilfix.ingame") == "true"
 val testPort = findProperty("anvilfix.port")?.toString() ?: "25599"
+// Each parallel verify lane runs its client in its own game directory
+val clientDir = findProperty("anvilfix.clientDir")?.toString()?.let { file(it) } ?: rootProject.file("run")
 
 stonecutter {
     constants.match("forge", "fabric", "forge", "neoforge")
@@ -62,7 +64,7 @@ legacyForge {
             systemProperty("anvilfix.smoke", "true")
             if (ingame) systemProperty("anvilfix.ingame", "true")
             systemProperty("anvilfix.port", testPort)
-            gameDirectory = rootProject.file("run")
+            gameDirectory = clientDir
         }
     }
 }
@@ -82,7 +84,7 @@ tasks.named("runSelftest") {
         val dir = layout.buildDirectory.dir("selftest-run").get().asFile
         dir.mkdirs()
         dir.resolve("eula.txt").writeText("eula=true\n")
-        dir.resolve("server.properties").writeText("online-mode=false\nwhite-list=false\nenforce-secure-profile=false\nserver-port=$testPort\nspawn-protection=0\nmax-tick-time=-1\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nwhite-list=false\nenforce-secure-profile=false\nserver-port=$testPort\nspawn-protection=0\nmax-tick-time=-1\nlevel-type=flat\ngenerate-structures=false\n")
     }
 }
 

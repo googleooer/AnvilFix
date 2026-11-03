@@ -16,6 +16,8 @@ base.archivesName = property("archives_base_name").toString()
 val hostTest = findProperty("anvilfix.host") == "true"
 val ingame = findProperty("anvilfix.ingame") == "true"
 val testPort = findProperty("anvilfix.port")?.toString() ?: "25599"
+// Each parallel verify lane runs its client in its own game directory
+val clientDir = findProperty("anvilfix.clientDir")?.toString()?.let { file(it) } ?: rootProject.file("run")
 
 stonecutter {
     constants.match("neoforge", "fabric", "forge", "neoforge")
@@ -63,7 +65,7 @@ runs {
         systemProperties.put("anvilfix.smoke", "true")
         if (ingame) systemProperties.put("anvilfix.ingame", "true")
         systemProperties.put("anvilfix.port", testPort)
-        workingDirectory.set(rootProject.layout.projectDirectory.dir("run"))
+        workingDirectory.set(clientDir)
     }
 }
 
@@ -73,7 +75,7 @@ tasks.matching { it.name == "runSelftest" }.configureEach {
         val dir = layout.buildDirectory.dir("selftest-run").get().asFile
         dir.mkdirs()
         dir.resolve("eula.txt").writeText("eula=true\n")
-        dir.resolve("server.properties").writeText("online-mode=false\nwhite-list=false\nenforce-secure-profile=false\nserver-port=$testPort\nspawn-protection=0\nmax-tick-time=-1\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nwhite-list=false\nenforce-secure-profile=false\nserver-port=$testPort\nspawn-protection=0\nmax-tick-time=-1\nlevel-type=flat\ngenerate-structures=false\n")
     }
 }
 
@@ -85,8 +87,8 @@ val metadata = mapOf(
     "pack_format_fields" to property("pack_format").toString().let {
         if (stonecutter.eval(minecraft, ">=1.21.9")) "\"min_format\": $it, \"max_format\": $it" else "\"pack_format\": $it"
     },
-    // FML before NeoForge 20.4 only understands the old "mandatory" dependency flag
-    "required" to "mandatory = true"
+    // FML before NeoForge 20.4 only understands the old "mandatory" dependency flag, and later ones reject it
+    "required" to if (stonecutter.eval(minecraft, "<1.20.4")) "mandatory = true" else "type = \"required\""
 )
 
 tasks.processResources {
