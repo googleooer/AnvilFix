@@ -22,7 +22,7 @@ public final class IngameHost {
     /** Hotbar layout the client expects. */
     static final int RENAME_SWORD = 0, EXPENSIVE_SWORD = 1, EXPENSIVE_BOOK = 2, MENDING_SWORD = 3, UNBREAKING_BOOK = 4, DAMAGED_SWORD = 5, DIAMONDS = 6;
     static final int START_LEVELS = 200;
-    static final int PORT = 25599;
+    static final int PORT = Integer.getInteger("anvilfix.port", 25599);
 
     private static final long TIMEOUT_MS = 10 * 60 * 1000;
 

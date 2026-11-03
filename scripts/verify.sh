@@ -11,6 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 25)}"
+port="${ANVILFIX_PORT:-25599}"
 status_file=port-status.tsv
 logs=build/verify-logs
 header='node\tbuild\tselftest\tingame\tscenarios\tingame checks\n'
@@ -30,7 +31,7 @@ for node in "$@"; do
     if ./gradlew ":$node:build" --no-daemon > "$logs/$node-build.log" 2>&1; then
         build=pass
         # Self-test server in host mode, in the background
-        ( timeout 1500 ./gradlew ":$node:runSelftest" -Panvilfix.host=true --no-daemon > "$server_log" 2>&1; echo "ANVILFIX_SERVER_EXIT $?" >> "$server_log" ) &
+        ( timeout 1500 ./gradlew ":$node:runSelftest" -Panvilfix.host=true -Panvilfix.port="$port" --no-daemon > "$server_log" 2>&1; echo "ANVILFIX_SERVER_EXIT $?" >> "$server_log" ) &
         server=$!
         for _ in $(seq 1 400); do
             grep -q -E 'ANVILFIX_HOST_READY|ANVILFIX_SERVER_EXIT' "$server_log" 2>/dev/null && break
@@ -38,7 +39,7 @@ for node in "$@"; do
         done
         if grep -q ANVILFIX_HOST_READY "$server_log"; then
             # Separate project cache so this build doesn't wait on the server build's locks
-            if timeout 900 ./gradlew ":$node:runClientSmoke" -Panvilfix.ingame=true --no-daemon --project-cache-dir build/client-gradle-cache > "$client_log" 2>&1 \
+            if timeout 900 ./gradlew ":$node:runClientSmoke" -Panvilfix.ingame=true -Panvilfix.port="$port" --no-daemon --project-cache-dir build/client-gradle-cache > "$client_log" 2>&1 \
                 && grep -q ANVILFIX_SMOKE_OK "$client_log"; then ingame=pass; else ingame=fail; fi
         fi
         wait "$server"

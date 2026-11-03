@@ -1,0 +1,18 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "LGPL-3.0"
+
+[[mods]]
+modId = "anvilfix_selftest"
+version = "1.0.0"
+displayName = "AnvilFix Self Test"
+
+[[mixins]]
+config = "anvilfix_selftest.mixins.json"
+
+[[dependencies.anvilfix_selftest]]
+modId = "anvilfix"
+${required}
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"

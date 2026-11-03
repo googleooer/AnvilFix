@@ -13,6 +13,7 @@ base.archivesName = property("archives_base_name").toString()
 // connects to it (see scripts/verify.sh)
 val hostTest = findProperty("anvilfix.host") == "true"
 val ingame = findProperty("anvilfix.ingame") == "true"
+val testPort = findProperty("anvilfix.port")?.toString() ?: "25599"
 
 stonecutter {
     constants.match("fabric", "fabric", "forge", "neoforge")
@@ -74,6 +75,7 @@ loom {
             source(selftest)
             vmArg("-Danvilfix.smoke=true")
             if (ingame) vmArg("-Danvilfix.ingame=true")
+            vmArg("-Danvilfix.port=$testPort")
         }
     }
 }
@@ -83,7 +85,7 @@ tasks.named("runSelftest") {
         val dir = layout.buildDirectory.dir("selftest-run").get().asFile
         dir.mkdirs()
         dir.resolve("eula.txt").writeText("eula=true\n")
-        dir.resolve("server.properties").writeText("online-mode=false\nenforce-secure-profile=false\nserver-port=25599\nspawn-protection=0\nmax-tick-time=-1\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nenforce-secure-profile=false\nserver-port=$testPort\nspawn-protection=0\nmax-tick-time=-1\n")
     }
 }
 

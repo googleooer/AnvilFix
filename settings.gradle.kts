@@ -18,6 +18,8 @@ stonecutter {
         // ModDevGradle's legacy plugin, so it gets its own build script.
         fun script(version: String, loader: String) = when {
             loader == "forge" && stonecutter.eval(version, "<=1.20.1") -> "build.forge-legacy.gradle.kts"
+            // These NeoForge releases publish no ModDevGradle bundle
+            loader == "neoforge" && version in setOf("1.20.2", "1.20.3", "1.20.5") -> "build.neoforge-ng.gradle.kts"
             else -> "build.$loader.gradle.kts"
         }
         fun mc(version: String, vararg loaders: String) = loaders.forEach { loader ->
@@ -31,6 +33,7 @@ stonecutter {
         mc("1.19.4", "fabric", "forge")
         mc("1.20", "fabric", "forge")
         mc("1.20.1", "fabric", "forge")
+        mc("1.20.2", "neoforge")
 
         vcsVersion = "1.19-fabric"
     }
