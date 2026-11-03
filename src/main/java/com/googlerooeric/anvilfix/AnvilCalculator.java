@@ -188,6 +188,11 @@ public final class AnvilCalculator {
                     }
                 }
             }
+
+            // The second item has to do something, or taking the output (say, to rename) would consume it for nothing
+            if (totalCost <= 0) {
+                return Result.EMPTY;
+            }
         }
 
         // If the enchanting item is empty and the new name is null or the same as the input item's name, there is no output

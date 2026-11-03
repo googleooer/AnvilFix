@@ -251,7 +251,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void undamagedItemWithMaterialDoesNothing(TestContext ctx) {
         // Renaming here would otherwise eat the whole diamond stack
         Anvil anvil = new Anvil(ctx).put(new ItemStack(Items.DIAMOND_SWORD), new ItemStack(Items.DIAMOND, 64)).rename("Blade");
@@ -259,7 +259,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void unusableSecondItemIsNotConsumed(TestContext ctx) {
         new Anvil(ctx).put(book(Enchantments.SHARPNESS, 1), new ItemStack(Items.DIRT, 64)).rename("Tome").expectNoOutput();
         new Anvil(ctx).put(enchanted(new ItemStack(Items.DIAMOND_SWORD), Enchantments.SHARPNESS, 1), book(Enchantments.SMITE, 1)).rename("Blade").expectNoOutput();
