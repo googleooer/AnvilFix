@@ -17,6 +17,18 @@ fabric_installer=1.1.0
 lanes=1
 if [ "${1:-}" = "-j" ]; then lanes=$2; shift 2; fi
 
+# Players install the bundled Fabric API jar from Modrinth (the Maven "fabric-api" artifact is an empty parent)
+fabric_api_url() { # version number
+    [ -s "$cache/fabric-api-versions.json" ] || curl -sfL -o "$cache/fabric-api-versions.json" "https://api.modrinth.com/v2/project/fabric-api/version"
+    python3 -I -c "
+import json, sys
+for v in json.load(open(sys.argv[1])):
+    if v['version_number'] == sys.argv[2]:
+        # old releases don't flag a primary file; their only file is the mod
+        print(next((f for f in v['files'] if f['primary']), v['files'][0])['url']); break
+" "$cache/fabric-api-versions.json" "$1"
+}
+
 prop() { grep "^$2=" "versions/$1/gradle.properties" | cut -d= -f2-; }
 fetch() { # url file
     [ -s "$2" ] || curl -sfL -o "$2.tmp" "$1" && mv "$2.tmp" "$2" 2>/dev/null
@@ -43,7 +55,7 @@ test_node() { # node lane
         fabric)
             local fl; fl=$(prop "$node" fabric_loader)
             fetch "https://meta.fabricmc.net/v2/versions/loader/$mc/$fl/$fabric_installer/server/jar" "$dir/fabric-server-launch.jar" \
-                && fetch "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/$(prop "$node" fabric_api)/fabric-api-$(prop "$node" fabric_api).jar" "$dir/mods/fabric-api.jar" \
+                && fetch "$(fabric_api_url "$(prop "$node" fabric_api)")" "$dir/mods/fabric-api.jar" \
                 || { echo "$node	fail	install" >> "$results"; echo "$node install failed"; return; }
             launch=("$java" -Danvilfix.selftest=true -jar fabric-server-launch.jar nogui) ;;
         forge|neoforge)
