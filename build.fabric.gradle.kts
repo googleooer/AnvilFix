@@ -108,3 +108,19 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.jar {
     from(rootProject.files("LICENSE", "COPYING")) { into("META-INF") }
 }
+
+// Production build of the test mod for scripts/prod-test.sh: same scenarios, without its own mixins (those only
+// matter for the dev-side checks and would need their own refmaps here)
+val selftestJar by tasks.registering(Jar::class) {
+    archiveClassifier = "selftest-dev"
+    from(selftest.output)
+    exclude("anvilfix_selftest.mixins.json", "com/googlerooeric/anvilfix/selftest/mixin/**")
+    filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
+        filter { line -> if (line.contains("anvilfix_selftest.mixins.json")) "" else line }
+    }
+}
+
+val remapSelftestJar by tasks.registering(net.fabricmc.loom.task.RemapJarTask::class) {
+    archiveClassifier = "selftest"
+    inputFile = selftestJar.flatMap { it.archiveFile }
+}

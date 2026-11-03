@@ -6,7 +6,7 @@ rm -rf dist
 mkdir -p dist
 missing=0
 for n in $(ls versions | sort -t. -k1,1n -k2,2n -k3,3n); do
-    jar=$(ls "versions/$n/build/libs/"*.jar 2>/dev/null | grep -v -E -- '-(sources|dev|all)\.jar$' | head -1)
+    jar=$(ls "versions/$n/build/libs/"*.jar 2>/dev/null | grep -v -E -- '-(sources|dev|all|selftest|selftest-dev)\.jar$' | head -1)
     if [ -n "$jar" ]; then
         cp "$jar" dist/
     else
