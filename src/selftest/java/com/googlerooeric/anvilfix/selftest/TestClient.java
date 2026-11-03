@@ -16,8 +16,11 @@ final class TestClient {
         //? if >=1.20.5 {
         /*ServerData data = new ServerData("AnvilFix self test", host + ":" + port, ServerData.Type.OTHER);
         ConnectScreen.startConnecting(minecraft.screen, minecraft, address, data, false, null);
-        *///?} elif >=1.20 {
+        *///?} elif >=1.20.2 {
         /*ServerData data = new ServerData("AnvilFix self test", host + ":" + port, ServerData.Type.OTHER);
+        ConnectScreen.startConnecting(minecraft.screen, minecraft, address, data, false);
+        *///?} elif >=1.20 {
+        /*ServerData data = new ServerData("AnvilFix self test", host + ":" + port, false);
         ConnectScreen.startConnecting(minecraft.screen, minecraft, address, data, false);
         *///?} else {
         ServerData data = new ServerData("AnvilFix self test", host + ":" + port, false);
