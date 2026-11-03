@@ -24,6 +24,21 @@ record() { # node build selftest ingame scenarios checks
     rm "$status_file.tmp"
 }
 
+# Drop what each node's run regenerates anyway, so all ~80 nodes fit on disk (KEEP_CACHES=1 to skip)
+cleanup() { # node
+    [ "${KEEP_CACHES:-0}" = 1 ] && return
+    local mc="${1%-*}"
+    rm -rf build/client-gradle-cache
+    case "$1" in
+        *-forge|*-neoforge)
+            rm -rf "versions/$1/build/moddev" "versions/$1/build/neoForm" "versions/$1/build/selftest-run/world" \
+                ~/.gradle/caches/neoformruntime/intermediate_results ~/.gradle/caches/ng_execute \
+                ~/.gradle/caches/minecraftforge/forgegradle/mavenizer/caches ;;
+    esac
+    # Under 8 GB free, also drop Loom's copy of this Minecraft version
+    if [ "$(df -g . | awk 'NR==2 {print $4}')" -lt 8 ]; then rm -rf ~/.gradle/caches/fabric-loom/"$mc"; fi
+}
+
 for node in "$@"; do
     echo "=== $node"
     build=fail selftest=- ingame=- scenarios= checks=
@@ -48,5 +63,6 @@ for node in "$@"; do
         checks=$(grep -o 'ANVILFIX_INGAME_RESULT.*' "$client_log" 2>/dev/null | head -1 | sed 's/ANVILFIX_INGAME_RESULT //')
     fi
     record "$node" "$build" "$selftest" "$ingame" "$scenarios" "$checks"
+    cleanup "$node"
     echo "$node build=$build selftest=$selftest ingame=$ingame scenarios=[$scenarios] ingame-checks=[$checks]"
 done

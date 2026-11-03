@@ -35,7 +35,11 @@ val selftest: SourceSet by sourceSets.creating {
 }
 
 legacyForge {
-    version = "$minecraft-${property("forge_version")}"
+    // Skip decompiling and recompiling Minecraft: much faster setup, and nothing here needs the game's sources
+    enable {
+        forgeVersion = "$minecraft-${property("forge_version")}"
+        isDisableRecompilation = true
+    }
 
     mods {
         register("anvilfix") { sourceSet(sourceSets.main.get()) }
@@ -90,7 +94,10 @@ val metadata = mapOf(
     "version" to project.version.toString(),
     "minecraft" to (findProperty("minecraft_range") ?: "[$minecraft]"),
     "loader" to property("forge_loader_range").toString(),
-    "pack_format" to property("pack_format").toString()
+    // pack.mcmeta switched from pack_format to a min/max range in 1.21.9
+    "pack_format_fields" to property("pack_format").toString().let {
+        if (stonecutter.eval(minecraft, ">=1.21.9")) "\"min_format\": $it, \"max_format\": $it" else "\"pack_format\": $it"
+    }
 )
 
 tasks.processResources {

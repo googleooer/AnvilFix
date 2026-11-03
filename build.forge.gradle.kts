@@ -32,9 +32,11 @@ sourceSets.all {
 }
 
 val selftest: SourceSet by sourceSets.creating {
-    compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
-    runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
 }
+// ForgeGradle only adds run tasks to source sets that depend on Minecraft through their own configurations
+configurations[selftest.implementationConfigurationName].extendsFrom(configurations.implementation.get())
 
 repositories {
     minecraft.mavenizer(this)
@@ -50,6 +52,19 @@ dependencies {
 minecraft {
     mappings("official", mcVersion)
     runs {
+        configureEach {
+            // Older FML only finds dev mods listed as modid%%path, so name each mod and its source set
+            mods {
+                register("anvilfix") { source(sourceSets.main.get()) }
+                register("anvilfix_selftest") { source(selftest) }
+            }
+            // Forge before 1.20.6 reads them from MOD_CLASSES, which its run configs leave to the build tool to set
+            environment("MOD_CLASSES", provider {
+                listOf("anvilfix" to sourceSets.main.get(), "anvilfix_selftest" to selftest).flatMap { (id, set) ->
+                    (set.output.classesDirs.files + listOfNotNull(set.output.resourcesDir)).map { "$id%%${it.absolutePath}" }
+                }.joinToString(File.pathSeparator)
+            })
+        }
         register("server") {
             args("--nogui")
             systemProperty("anvilfix.selftest", "true")
@@ -86,7 +101,10 @@ val metadata = mapOf(
     "version" to project.version.toString(),
     "minecraft" to (findProperty("minecraft_range") ?: "[$mcVersion]"),
     "loader" to property("forge_loader_range").toString(),
-    "pack_format" to property("pack_format").toString()
+    // pack.mcmeta switched from pack_format to a min/max range in 1.21.9
+    "pack_format_fields" to property("pack_format").toString().let {
+        if (stonecutter.eval(mcVersion, ">=1.21.9")) "\"min_format\": $it, \"max_format\": $it" else "\"pack_format\": $it"
+    }
 )
 
 tasks.processResources {
