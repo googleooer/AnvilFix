@@ -51,12 +51,10 @@ repositories {
     mavenCentral()
 }
 
-// Forge 1.21 shipped bootstrap 2.1.3, which leaves jopt-simple out of the module layer in dev ("Module
-// jopt.simple not found"); later Forge builds use a fixed bootstrap. forge_bootstrap picks a newer one per node.
-findProperty("forge_bootstrap")?.let { bootstrap ->
-    configurations.all {
-        resolutionStrategy.force("net.minecraftforge:bootstrap:$bootstrap", "net.minecraftforge:bootstrap-api:$bootstrap")
-    }
+// force_dependencies pins library versions per node. Forge 1.21 needs it: Gradle upgrades its jopt-simple to
+// 6.0-alpha-3, whose module name modlauncher can't find ("Module jopt.simple not found").
+findProperty("force_dependencies")?.toString()?.split(",")?.map { it.trim() }?.let { pins ->
+    configurations.all { resolutionStrategy.force(*pins.toTypedArray()) }
 }
 
 dependencies {
