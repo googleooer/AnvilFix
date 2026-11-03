@@ -128,59 +128,30 @@ public final class AnvilCalculator {
                 }
                 repairItemUsage = repairCount;
             } else {
-                // If the input item isn't a book, and the enchanting item isn't an enchanted book or the input item is not damageable, there is no output
-                if (!(isEnchantedBook || resultItem.getItem() == enchantingItem.getItem() && resultItem.isDamageable()) && !isInputItemBook) {
+                // The second item must be an enchanted book or a second copy of a damageable item, otherwise there is no output
+                if (!(isEnchantedBook || resultItem.getItem() == enchantingItem.getItem() && resultItem.isDamageable())) {
                     return Result.EMPTY;
                 }
 
                 // Get the enchantments on the enchanting item
                 Map<Enchantment, Integer> newEnchants = EnchantmentHelper.get(enchantingItem);
 
-                if (isInputItemBook && isEnchantedBook) // If both the input item and the enchanting item are enchanted books, handle merging
-                {
-                    Map<Enchantment, Integer> book2Enchants = new HashMap<>(newEnchants);
-                    for (Enchantment e : currentEnchants.keySet()) {
-                        if (book2Enchants.containsKey(e)) {
-                            int currentLevel = currentEnchants.get(e);
-                            int book2Level = book2Enchants.get(e);
-                            if (currentLevel <= book2Level && currentLevel + 1 <= e.getMaxLevel()) {
-                                currentEnchants.put(e, currentLevel + 1);
-                                totalCost += baseCost(e) * (currentLevel + 1);
-                            }
+                for (Enchantment enchantment : newEnchants.keySet()) {
+                    if (enchantment == null) continue;
 
-                            book2Enchants.remove(e);
-                        }
-                    }
+                    int currentLevel = currentEnchants.getOrDefault(enchantment, 0);
+                    int resultLevel = combinedLevel(enchantment, currentLevel, newEnchants.get(enchantment));
 
-                    for (Map.Entry<Enchantment, Integer> entry : book2Enchants.entrySet()) {
-                        Enchantment enchantment = entry.getKey();
-                        Integer level = entry.getValue();
-                        boolean compatible = currentEnchants.keySet().stream()
-                                .noneMatch(existing -> areIncompatible(existing, enchantment, mendingWorksWithUnbreaking));
-                        if (compatible) {
-                            currentEnchants.put(enchantment, level);
-                            totalCost += baseCost(enchantment) * level;
-                        }
-                    }
-                }
-                else // If the input item is not an enchanted book, handle regular enchanting
-                {
-                    for (Enchantment enchantment : newEnchants.keySet()) {
-                        if (enchantment == null) continue;
+                    // Skip enchantments the item can't take, that conflict with what it has, or that wouldn't go up.
+                    // An enchanted book takes anything, so two books merge by the same rules as book + item.
+                    if (!(isInputItemBook || enchantment.isAcceptableItem(inputItem)) || resultLevel <= currentLevel) continue;
+                    boolean hasIncompatibleEnchantments = currentEnchants.keySet().stream()
+                            .anyMatch(enchant -> areIncompatible(enchantment, enchant, mendingWorksWithUnbreaking));
+                    if (hasIncompatibleEnchantments) continue;
 
-                        int currentLevel = currentEnchants.getOrDefault(enchantment, 0);
-                        int resultLevel = combinedLevel(enchantment, currentLevel, newEnchants.get(enchantment));
-
-                        // Skip enchantments the item can't take, that conflict with what it has, or that wouldn't go up
-                        if (!enchantment.isAcceptableItem(inputItem) || resultLevel <= currentLevel) continue;
-                        boolean hasIncompatibleEnchantments = currentEnchants.keySet().stream()
-                                .anyMatch(enchant -> areIncompatible(enchantment, enchant, mendingWorksWithUnbreaking));
-                        if (hasIncompatibleEnchantments) continue;
-
-                        // Charge for the level the item ends up with: base cost x level
-                        currentEnchants.put(enchantment, resultLevel);
-                        totalCost += baseCost(enchantment) * resultLevel;
-                    }
+                    // Charge for the level the item ends up with: base cost x level
+                    currentEnchants.put(enchantment, resultLevel);
+                    totalCost += baseCost(enchantment) * resultLevel;
                 }
             }
 

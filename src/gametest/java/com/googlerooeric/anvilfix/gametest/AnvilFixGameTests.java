@@ -155,7 +155,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void bookMergeKeepsHigherLevel(TestContext ctx) {
         Anvil anvil = new Anvil(ctx).put(book(Enchantments.SHARPNESS, 1), book(Enchantments.SHARPNESS, 3));
         anvil.expectLevel(Enchantments.SHARPNESS, 3);
@@ -173,6 +173,12 @@ public class AnvilFixGameTests implements FabricGameTest {
         anvil.expectLevel(Enchantments.SHARPNESS, 1);
         anvil.expectLevel(Enchantments.UNBREAKING, 2);
         anvil.expectCost(6);
+        ctx.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void enchantedItemOnBookDoesNothing(TestContext ctx) {
+        new Anvil(ctx).put(book(Enchantments.UNBREAKING, 1), enchanted(new ItemStack(Items.DIAMOND_SWORD), Enchantments.SHARPNESS, 5)).expectNoOutput();
         ctx.complete();
     }
 
