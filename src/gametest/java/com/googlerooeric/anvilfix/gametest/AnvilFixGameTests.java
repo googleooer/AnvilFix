@@ -359,6 +359,39 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
+    // --- Multiplayer sync ---
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void levelCostIsResentOnEveryUpdate(TestContext ctx) {
+        Anvil anvil = new Anvil(ctx);
+        java.util.List<Integer> sentCosts = new java.util.ArrayList<>();
+        anvil.handler.updateSyncHandler(new net.minecraft.screen.ScreenHandlerSyncHandler() {
+            @Override
+            public void updateState(net.minecraft.screen.ScreenHandler handler, net.minecraft.util.collection.DefaultedList<ItemStack> stacks, ItemStack cursorStack, int[] properties) {
+            }
+
+            @Override
+            public void updateSlot(net.minecraft.screen.ScreenHandler handler, int slot, ItemStack stack) {
+            }
+
+            @Override
+            public void updateCursorStack(net.minecraft.screen.ScreenHandler handler, ItemStack stack) {
+            }
+
+            @Override
+            public void updateProperty(net.minecraft.screen.ScreenHandler handler, int property, int value) {
+                sentCosts.add(value);
+            }
+        });
+        anvil.put(new ItemStack(Items.DIAMOND_SWORD), ItemStack.EMPTY);
+        sentCosts.clear();
+        // A vanilla client predicts its own cost for each keystroke, so the server has to resend 2 every time
+        anvil.rename("B");
+        anvil.rename("Bl");
+        anvil.check(sentCosts.equals(java.util.List.of(2, 2)), "expected the cost to be sent twice, sent " + sentCosts);
+        ctx.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void emptyAnvilHasNoOutput(TestContext ctx) {
         new Anvil(ctx).put(ItemStack.EMPTY, book(Enchantments.SHARPNESS, 1)).expectNoOutput();

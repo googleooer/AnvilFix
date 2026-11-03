@@ -52,6 +52,15 @@ public abstract class AnvilScreenHandlerMixin
         this.repairItemUsage = result.materialUsage();
         this.levelCost.set(result.levelCost());
         this.output.setStack(0, result.output());
+
+        // Properties are only sent when the server's value changes. A client without AnvilFix runs the vanilla
+        // calculation on its own (e.g. on every keystroke while renaming) and would keep showing that number,
+        // so forget the last sent cost to make sendContentUpdates() send it again.
+        ScreenHandlerAccessor self = (ScreenHandlerAccessor) this;
+        int index = self.anvilfix$getProperties().indexOf(this.levelCost);
+        if (index >= 0) {
+            self.anvilfix$getTrackedPropertyValues().set(index, ~result.levelCost());
+        }
         this.sendContentUpdates();
     }
 

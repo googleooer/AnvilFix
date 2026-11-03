@@ -4,7 +4,8 @@
   "package": "com.googlerooeric.anvilfix.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "screen.AnvilScreenHandlerMixin"
+    "screen.AnvilScreenHandlerMixin",
+    "screen.ScreenHandlerAccessor"
   ],
   "client": [
     "client.AnvilScreenMixin"
