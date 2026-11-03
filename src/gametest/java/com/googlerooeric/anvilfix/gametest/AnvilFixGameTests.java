@@ -272,7 +272,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void combiningTwoDamagedItemsRepairs(TestContext ctx) {
         int max = new ItemStack(Items.DIAMOND_SWORD).getMaxDamage();
         Anvil anvil = new Anvil(ctx).put(damaged(new ItemStack(Items.DIAMOND_SWORD), max / 2), damaged(new ItemStack(Items.DIAMOND_SWORD), max / 2));

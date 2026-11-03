@@ -133,6 +133,17 @@ public final class AnvilCalculator {
                     return Result.EMPTY;
                 }
 
+                // Two copies of a damageable item: add their durability plus vanilla's 12% bonus, at the cost of one material
+                if (resultItem.isDamageable() && !isEnchantedBook) {
+                    int remaining = inputItem.getMaxDamage() - inputItem.getDamage();
+                    int added = enchantingItem.getMaxDamage() - enchantingItem.getDamage() + resultItem.getMaxDamage() * 12 / 100;
+                    int newDamage = Math.max(resultItem.getMaxDamage() - (remaining + added), 0);
+                    if (newDamage < resultItem.getDamage()) {
+                        resultItem.setDamage(newDamage);
+                        totalCost += REPAIR_COST_PER_MATERIAL;
+                    }
+                }
+
                 // Get the enchantments on the enchanting item
                 Map<Enchantment, Integer> newEnchants = EnchantmentHelper.get(enchantingItem);
 
