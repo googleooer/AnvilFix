@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
  */
 public final class ClientSmoke {
     private static boolean done;
+    private static boolean connecting;
 
     private ClientSmoke() {
     }
@@ -17,6 +18,10 @@ public final class ClientSmoke {
     }
 
     public static void onClientTick(Minecraft minecraft) {
+        if (IngameClient.enabled()) {
+            ingameTick(minecraft);
+            return;
+        }
         // The first menu isn't always the title screen (e.g. loader warnings), so accept any screen once loading is over
         if (done || minecraft.getOverlay() != null || minecraft.screen == null) {
             return;
@@ -33,6 +38,36 @@ public final class ClientSmoke {
             throw new IllegalStateException(e);
         }
         SelfTest.LOGGER.info("ANVILFIX_SMOKE_OK client finished loading ({}) and anvil mixins applied", minecraft.screen.getClass().getName());
+        minecraft.stop();
+    }
+
+    /** Connected to the self-test server: run the in-game anvil test, then quit with its result. */
+    private static void ingameTick(Minecraft minecraft) {
+        if (done) {
+            return;
+        }
+        if (minecraft.screen != null && minecraft.screen.getClass().getSimpleName().equals("LoadingErrorScreen")) {
+            done = true;
+            SelfTest.LOGGER.error("ANVILFIX_SMOKE_FAILED mod loading reported problems: {}", describeFields(minecraft.screen));
+            System.exit(1);
+        }
+        // Connect only once loading is over: joining mid resource reload crashes the renderer
+        if (!connecting) {
+            if (minecraft.getOverlay() == null && minecraft.screen != null && minecraft.level == null) {
+                connecting = true;
+                SelfTest.LOGGER.info("ANVILFIX_INGAME connecting to localhost:{}", IngameHost.PORT);
+                TestClient.connect(minecraft, "localhost", IngameHost.PORT);
+            }
+            return;
+        }
+        if (!IngameClient.tick(minecraft)) {
+            return;
+        }
+        done = true;
+        if (IngameClient.failed()) {
+            System.exit(1);
+        }
+        SelfTest.LOGGER.info("ANVILFIX_SMOKE_OK client joined the server and the in-game anvil test passed");
         minecraft.stop();
     }
 

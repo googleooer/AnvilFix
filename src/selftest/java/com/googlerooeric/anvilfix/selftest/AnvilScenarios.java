@@ -48,9 +48,10 @@ public final class AnvilScenarios {
     private static final class Anvil {
         final Player player;
         final AnvilMenu menu;
+        final BlockPos pos;
 
         Anvil(Context ctx) {
-            BlockPos pos = ctx.level().getSharedSpawnPos();
+            this.pos = ctx.level().getSharedSpawnPos().above(3);
             this.player = TestItems.survivalPlayer(ctx.level());
             this.player.experienceLevel = 1000;
             this.menu = new AnvilMenu(0, player.getInventory(), ContainerLevelAccess.create(ctx.level(), pos));
@@ -292,6 +293,57 @@ public final class AnvilScenarios {
             anvil.rename("B");
             anvil.rename("Bl");
             check(sentCosts.equals(List.of(2, 2)), "expected the cost to be sent twice, sent " + sentCosts);
+        }));
+
+        // --- Edge cases ---
+
+        s.add(new Scenario("creativeTakesWithoutLevels", ctx -> {
+            Anvil anvil = new Anvil(ctx);
+            TestItems.setCreative(anvil.player, true);
+            anvil.player.experienceLevel = 0;
+            anvil.put(sword(), TestItems.book(ctx, SHARPNESS, 5)).expectCost(10);
+            anvil.take();
+            check(anvil.player.experienceLevel == 0, "creative player should not pay levels, has " + anvil.player.experienceLevel);
+        }));
+        s.add(new Scenario("cursesCombineLikeOtherEnchantments", ctx -> {
+            // Curse of Binding can go on armor; Curse of Vanishing has a single level so V+V stays at I
+            new Anvil(ctx).put(new ItemStack(Items.DIAMOND_CHESTPLATE), TestItems.book(ctx, "minecraft:binding_curse", 1))
+                    .expectLevel("minecraft:binding_curse", 1).expectCost(2);
+            new Anvil(ctx).put(TestItems.book(ctx, "minecraft:vanishing_curse", 1), TestItems.book(ctx, "minecraft:vanishing_curse", 1)).expectNoOutput();
+        }));
+        s.add(new Scenario("aboveMaxLevelsAreKept", ctx -> {
+            // Command-made books above the max level still apply, and cost base x level
+            new Anvil(ctx).put(sword(), TestItems.book(ctx, SHARPNESS, 6)).expectLevel(SHARPNESS, 6).expectCost(12);
+            new Anvil(ctx).put(TestItems.enchanted(ctx, sword(), SHARPNESS, 5), TestItems.book(ctx, SHARPNESS, 6)).expectLevel(SHARPNESS, 6).expectCost(12);
+        }));
+        s.add(new Scenario("maxLevelPlusSameLevelDoesNothing", ctx ->
+                new Anvil(ctx).put(TestItems.enchanted(ctx, sword(), SHARPNESS, 5), TestItems.book(ctx, SHARPNESS, 5)).expectNoOutput()));
+        s.add(new Scenario("partlyIncompatibleBookAppliesTheRest", ctx -> {
+            Map<String, Integer> enchants = new LinkedHashMap<>();
+            enchants.put(SMITE, 2);         // conflicts with the sword's Sharpness
+            enchants.put(UNBREAKING, 2);    // 3 x 2 = 6
+            new Anvil(ctx).put(TestItems.enchanted(ctx, sword(), SHARPNESS, 1), TestItems.book(ctx, enchants))
+                    .expectLevel(SMITE, 0).expectLevel(UNBREAKING, 2).expectLevel(SHARPNESS, 1).expectCost(6);
+        }));
+        s.add(new Scenario("plainBookCantBeEnchanted", ctx ->
+                new Anvil(ctx).put(new ItemStack(Items.BOOK), TestItems.book(ctx, SHARPNESS, 1)).expectNoOutput()));
+        s.add(new Scenario("renamingAStackKeepsTheStack", ctx -> {
+            Anvil anvil = new Anvil(ctx).put(new ItemStack(Items.STICK, 16), ItemStack.EMPTY).rename("Wand").expectCost(2);
+            check(anvil.output().getCount() == 16, "expected 16 renamed sticks, got " + anvil.output().getCount());
+        }));
+        s.add(new Scenario("blankNameWithoutCustomNameDoesNothing", ctx ->
+                new Anvil(ctx).put(sword(), ItemStack.EMPTY).rename("").expectNoOutput()));
+        s.add(new Scenario("anvilStillWearsOut", ctx -> {
+            // Vanilla has a 12% chance per use to damage the anvil; 200 uses without a single hit is ~1e-11
+            Anvil anvil = new Anvil(ctx);
+            BlockPos pos = anvil.pos;
+            ctx.level().setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.ANVIL.defaultBlockState());
+            for (int i = 0; i < 200 && ctx.level().getBlockState(pos).is(net.minecraft.world.level.block.Blocks.ANVIL); i++) {
+                anvil.put(sword(), ItemStack.EMPTY).rename("Blade " + i);
+                anvil.take();
+            }
+            check(!ctx.level().getBlockState(pos).is(net.minecraft.world.level.block.Blocks.ANVIL), "anvil never got damaged in 200 uses");
+            ctx.level().removeBlock(pos, false);
         }));
 
         s.add(new Scenario("emptyAnvilHasNoOutput", ctx -> {

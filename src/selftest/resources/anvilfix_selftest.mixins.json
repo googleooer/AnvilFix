@@ -6,6 +6,9 @@
   "mixins": [
     "ThirdPartyAnvilMixin"
   ],
+  "client": [
+    "TranslatableContentsMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

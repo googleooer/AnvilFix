@@ -10,6 +10,11 @@ version = "${property("mod_version")}+$minecraft-forge"
 group = property("maven_group").toString()
 base.archivesName = property("archives_base_name").toString()
 
+// -Panvilfix.host=true keeps the self-test server up for the in-game test client, which -Panvilfix.ingame=true
+// connects to it (see scripts/verify.sh)
+val hostTest = findProperty("anvilfix.host") == "true"
+val ingame = findProperty("anvilfix.ingame") == "true"
+
 stonecutter {
     constants.match("forge", "fabric", "forge", "neoforge")
 }
@@ -41,6 +46,7 @@ legacyForge {
             server()
             sourceSet = selftest
             systemProperty("anvilfix.selftest", "true")
+            systemProperty("anvilfix.host", hostTest.toString())
             systemProperty("anvilfix.selftest.report", layout.buildDirectory.file("selftest/junit.xml").get().asFile.path)
             programArgument("--nogui")
             gameDirectory = layout.buildDirectory.dir("selftest-run").get().asFile
@@ -49,6 +55,7 @@ legacyForge {
             client()
             sourceSet = selftest
             systemProperty("anvilfix.smoke", "true")
+            if (ingame) systemProperty("anvilfix.ingame", "true")
             gameDirectory = rootProject.file("run")
         }
     }
@@ -69,7 +76,7 @@ tasks.named("runSelftest") {
         val dir = layout.buildDirectory.dir("selftest-run").get().asFile
         dir.mkdirs()
         dir.resolve("eula.txt").writeText("eula=true\n")
-        dir.resolve("server.properties").writeText("online-mode=false\nspawn-protection=0\nmax-tick-time=-1\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nenforce-secure-profile=false\nserver-port=25599\nspawn-protection=0\nmax-tick-time=-1\n")
     }
 }
 

@@ -48,6 +48,18 @@ final class TestItems {
         };
     }
 
+    static net.minecraft.server.level.ServerLevel serverLevel(net.minecraft.server.level.ServerPlayer player) {
+        //? if >=1.20 {
+        /*return player.serverLevel();
+        *///?} else {
+        return player.getLevel();
+        //?}
+    }
+
+    static void setCreative(Player player, boolean creative) {
+        player.getAbilities().instabuild = creative;
+    }
+
     static GameRules freshGameRules() {
         return new GameRules();
     }

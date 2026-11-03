@@ -9,6 +9,11 @@ version = "${property("mod_version")}+$minecraft-fabric"
 group = property("maven_group").toString()
 base.archivesName = property("archives_base_name").toString()
 
+// -Panvilfix.host=true keeps the self-test server up for the in-game test client, which -Panvilfix.ingame=true
+// connects to it (see scripts/verify.sh)
+val hostTest = findProperty("anvilfix.host") == "true"
+val ingame = findProperty("anvilfix.ingame") == "true"
+
 stonecutter {
     constants.match("fabric", "fabric", "forge", "neoforge")
 }
@@ -57,6 +62,7 @@ loom {
             configName = "Self Test"
             source(selftest)
             vmArg("-Danvilfix.selftest=true")
+            vmArg("-Danvilfix.host=$hostTest")
             vmArg("-Danvilfix.selftest.report=${layout.buildDirectory.file("selftest/junit.xml").get().asFile}")
             programArg("--nogui")
             runDir = "build/selftest-run"
@@ -67,6 +73,7 @@ loom {
             configName = "Client Smoke Test"
             source(selftest)
             vmArg("-Danvilfix.smoke=true")
+            if (ingame) vmArg("-Danvilfix.ingame=true")
         }
     }
 }
@@ -76,7 +83,7 @@ tasks.named("runSelftest") {
         val dir = layout.buildDirectory.dir("selftest-run").get().asFile
         dir.mkdirs()
         dir.resolve("eula.txt").writeText("eula=true\n")
-        dir.resolve("server.properties").writeText("online-mode=false\nspawn-protection=0\nmax-tick-time=-1\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nenforce-secure-profile=false\nserver-port=25599\nspawn-protection=0\nmax-tick-time=-1\n")
     }
 }
 

@@ -50,6 +50,10 @@ public final class SelfTest {
         writeReport(outcomes, failed);
 
         int code = failed == 0 ? 0 : 1;
+        if (IngameHost.enabled() && code == 0) {
+            IngameHost.hostThenExit(server, code);
+            return;
+        }
         // Exit from another thread: the shutdown hook waits for the server thread, which we're on
         new Thread(() -> System.exit(code), "AnvilFix self test exit").start();
     }
