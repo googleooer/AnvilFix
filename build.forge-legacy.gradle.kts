@@ -1,0 +1,102 @@
+// Forge 1.19 - 1.20.1, through ModDevGradle's legacy plugin (these versions use SRG names at runtime)
+plugins {
+    id("net.neoforged.moddev.legacyforge")
+}
+
+val minecraft = stonecutter.current.version
+val javaVersion = property("java_version").toString().toInt()
+
+version = "${property("mod_version")}+$minecraft-forge"
+group = property("maven_group").toString()
+base.archivesName = property("archives_base_name").toString()
+
+stonecutter {
+    constants.match("forge", "fabric", "forge", "neoforge")
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
+}
+
+sourceSets.all {
+    java.exclude("**/fabric/**", "**/neoforge/**")
+    resources.exclude("fabric.mod.json", "META-INF/neoforge.mods.toml")
+}
+
+val selftest: SourceSet by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
+}
+
+legacyForge {
+    version = "$minecraft-${property("forge_version")}"
+
+    mods {
+        register("anvilfix") { sourceSet(sourceSets.main.get()) }
+        register("anvilfix_selftest") { sourceSet(selftest) }
+    }
+
+    runs {
+        register("selftest") {
+            server()
+            sourceSet = selftest
+            systemProperty("anvilfix.selftest", "true")
+            systemProperty("anvilfix.selftest.report", layout.buildDirectory.file("selftest/junit.xml").get().asFile.path)
+            programArgument("--nogui")
+            gameDirectory = layout.buildDirectory.dir("selftest-run").get().asFile
+        }
+        register("clientSmoke") {
+            client()
+            sourceSet = selftest
+            systemProperty("anvilfix.smoke", "true")
+            gameDirectory = rootProject.file("run")
+        }
+    }
+}
+
+mixin {
+    add(sourceSets.main.get(), "anvilfix.refmap.json")
+    config("anvilfix.mixins.json")
+    config("anvilfix_selftest.mixins.json")
+}
+
+dependencies {
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+}
+
+tasks.named("runSelftest") {
+    doFirst {
+        val dir = layout.buildDirectory.dir("selftest-run").get().asFile
+        dir.mkdirs()
+        dir.resolve("eula.txt").writeText("eula=true\n")
+        dir.resolve("server.properties").writeText("online-mode=false\nspawn-protection=0\nmax-tick-time=-1\n")
+    }
+}
+
+tasks.jar {
+    manifest.attributes("MixinConfigs" to "anvilfix.mixins.json")
+}
+
+val metadata = mapOf(
+    "version" to project.version.toString(),
+    "minecraft" to (findProperty("minecraft_range") ?: "[$minecraft]"),
+    "loader" to property("forge_loader_range").toString(),
+    "pack_format" to property("pack_format").toString()
+)
+
+tasks.processResources {
+    inputs.properties(metadata)
+    filesMatching(listOf("META-INF/mods.toml", "pack.mcmeta")) { expand(metadata) }
+    // Point the mixin config at the refmap the annotation processor writes
+    filesMatching("anvilfix.mixins.json") { filter { it.replace("\"package\"", "\"refmap\": \"anvilfix.refmap.json\",\n  \"package\"") } }
+}
+
+tasks.named<ProcessResources>("processSelftestResources") {
+    inputs.properties(metadata)
+    filesMatching(listOf("META-INF/mods.toml", "pack.mcmeta")) { expand(metadata) }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaVersion
+}

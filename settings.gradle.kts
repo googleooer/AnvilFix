@@ -14,12 +14,17 @@ plugins {
 
 stonecutter {
     create(rootProject) {
-        // Each node is "<minecraft version>-<loader>" and builds with build.<loader>.gradle.kts
+        // Each node is "<minecraft version>-<loader>". Forge up to 1.20.1 uses SRG names at runtime and needs
+        // ModDevGradle's legacy plugin, so it gets its own build script.
+        fun script(version: String, loader: String) = when {
+            loader == "forge" && stonecutter.eval(version, "<=1.20.1") -> "build.forge-legacy.gradle.kts"
+            else -> "build.$loader.gradle.kts"
+        }
         fun mc(version: String, vararg loaders: String) = loaders.forEach { loader ->
-            version("$version-$loader", version).buildscript("build.$loader.gradle.kts")
+            version("$version-$loader", version).buildscript(script(version, loader))
         }
 
-        mc("1.19", "fabric")
+        mc("1.19", "fabric", "forge")
 
         vcsVersion = "1.19-fabric"
     }

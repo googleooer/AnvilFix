@@ -21,7 +21,7 @@ java {
 // Loader-specific code lives next to the shared code; keep only Fabric's
 sourceSets.all {
     java.exclude("**/forge/**", "**/neoforge/**")
-    resources.exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml", "META-INF/accesstransformer.cfg")
+    resources.exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml", "pack.mcmeta")
 }
 
 val selftest: SourceSet by sourceSets.creating {
@@ -86,9 +86,6 @@ tasks.processResources {
     filesMatching("fabric.mod.json") { expand(props) }
 }
 
-tasks.named<ProcessResources>("processSelftestResources") {
-    exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml")
-}
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
