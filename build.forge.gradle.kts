@@ -83,6 +83,10 @@ minecraft {
             workingDir.set(layout.buildDirectory.dir("selftest-run"))
         }
         register("client") {
+            // GLFW on macOS needs the main thread; newer Forge run configs add this themselves, older ones don't
+            if (System.getProperty("os.name").startsWith("Mac") && stonecutter.eval(mcVersion, "<1.20.6")) {
+                jvmArgs("-XstartOnFirstThread")
+            }
             systemProperty("anvilfix.smoke", "true")
             if (ingame) systemProperty("anvilfix.ingame", "true")
             systemProperty("anvilfix.port", testPort)
