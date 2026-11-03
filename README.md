@@ -2,7 +2,7 @@
 Fixes and rebalances anvils.
 
 
-(Requires the Fabric API)
+Available for Fabric (requires the Fabric API), Forge and NeoForge, on Minecraft 1.19 through 26.3.
 
 ## Why I Made These Changes
 
@@ -32,12 +32,17 @@ I've been increasingly frustrated with the balance of Survival mode, especially 
 
 ### Optional: Mending Rebalance
 
-- I know this change is probably gonna be controversial, so it's an optional feature (mendingWorksWithUnbreaking gamerule, false by default)
+- I know this change is probably gonna be controversial, so it's an optional feature (mendingWorksWithUnbreaking gamerule, false by default; from 1.21.11 it's `anvilfix:mending_works_with_unbreaking`)
 - I've always felt like Mending is Mojang's band-aid fix to the anvil repairing issue, while also being overpowered and obtainable too early in the game. With the anvil issues resolved, a rebalance seems appropriate.
 - Mending and Unbreaking are now incompatible, providing players with two choices:
   - Choose Unbreaking if you want extended equipment durability, but need to manually repair it through an anvil.
   - Choose Mending for automatic equipment repair via XP, but with standard uses.
 ~~- Buffed Mending: Mending now works on unequipped items as well. The hierarchy of repair priority is as follows: Equipped items take priority over unequipped ones, and damaged items are prioritized over those with less damage. Damaged unequipped items are given priority over nearly fully repaired equipped items.~~ Not implemented yet.
+
+## Compatibility notes
+
+- AnvilFix replaces the anvil's result calculation. On Forge and NeoForge that also means the loaders' anvil update events don't fire, so other mods' anvil recipes made through those events won't show up.
+- Install AnvilFix on the client too. A client without it still shows "Too Expensive!" for costs of 40 or more, though the server lets you take the item.
 
 ## Disclaimer
 
