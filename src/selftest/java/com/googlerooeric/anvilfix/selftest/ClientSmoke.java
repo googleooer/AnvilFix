@@ -23,13 +23,13 @@ public final class ClientSmoke {
             return;
         }
         // The first menu isn't always the title screen (e.g. loader warnings), so accept any screen once loading is over
-        if (done || minecraft.getOverlay() != null || minecraft.screen == null) {
+        if (done || TestClient.overlay(minecraft) != null || TestClient.screen(minecraft) == null) {
             return;
         }
         done = true;
         // Forge and NeoForge show their mod loading errors and warnings on this screen instead of crashing
-        if (minecraft.screen.getClass().getSimpleName().equals("LoadingErrorScreen")) {
-            SelfTest.LOGGER.error("ANVILFIX_SMOKE_FAILED mod loading reported problems: {}", describeFields(minecraft.screen));
+        if (TestClient.screen(minecraft).getClass().getSimpleName().equals("LoadingErrorScreen")) {
+            SelfTest.LOGGER.error("ANVILFIX_SMOKE_FAILED mod loading reported problems: {}", describeFields(TestClient.screen(minecraft)));
             System.exit(1);
         }
         try {
@@ -37,7 +37,7 @@ public final class ClientSmoke {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
-        SelfTest.LOGGER.info("ANVILFIX_SMOKE_OK client finished loading ({}) and anvil mixins applied", minecraft.screen.getClass().getName());
+        SelfTest.LOGGER.info("ANVILFIX_SMOKE_OK client finished loading ({}) and anvil mixins applied", TestClient.screen(minecraft).getClass().getName());
         minecraft.stop();
     }
 
@@ -46,14 +46,14 @@ public final class ClientSmoke {
         if (done) {
             return;
         }
-        if (minecraft.screen != null && minecraft.screen.getClass().getSimpleName().equals("LoadingErrorScreen")) {
+        if (TestClient.screen(minecraft) != null && TestClient.screen(minecraft).getClass().getSimpleName().equals("LoadingErrorScreen")) {
             done = true;
-            SelfTest.LOGGER.error("ANVILFIX_SMOKE_FAILED mod loading reported problems: {}", describeFields(minecraft.screen));
+            SelfTest.LOGGER.error("ANVILFIX_SMOKE_FAILED mod loading reported problems: {}", describeFields(TestClient.screen(minecraft)));
             System.exit(1);
         }
         // Connect only once loading is over: joining mid resource reload crashes the renderer
         if (!connecting) {
-            if (minecraft.getOverlay() == null && minecraft.screen != null && minecraft.level == null) {
+            if (TestClient.overlay(minecraft) == null && TestClient.screen(minecraft) != null && minecraft.level == null) {
                 connecting = true;
                 SelfTest.LOGGER.info("ANVILFIX_INGAME connecting to localhost:{}", IngameHost.PORT);
                 TestClient.connect(minecraft, "localhost", IngameHost.PORT);

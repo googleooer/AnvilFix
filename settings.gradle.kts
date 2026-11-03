@@ -17,6 +17,8 @@ stonecutter {
         // Each node is "<minecraft version>-<loader>". Forge up to 1.20.1 uses SRG names at runtime and needs
         // ModDevGradle's legacy plugin, so it gets its own build script.
         fun script(version: String, loader: String) = when {
+            // 26.x ships unobfuscated: Fabric uses the non-remapping Loom
+            loader == "fabric" && stonecutter.eval(version, ">=26.1") -> "build.fabric-unobf.gradle.kts"
             loader == "forge" && stonecutter.eval(version, "<=1.20.1") -> "build.forge-legacy.gradle.kts"
             // These NeoForge releases publish no ModDevGradle bundle
             loader == "neoforge" && version in setOf("1.20.2", "1.20.3", "1.20.5") -> "build.neoforge-ng.gradle.kts"
@@ -50,6 +52,11 @@ stonecutter {
         mc("1.21.9", "fabric")
         mc("1.21.10", "fabric")
         mc("1.21.11", "fabric")
+        mc("26.1", "fabric")
+        mc("26.1.1", "fabric")
+        mc("26.1.2", "fabric")
+        mc("26.2", "fabric")
+        mc("26.3", "fabric")
 
         vcsVersion = "1.19-fabric"
     }

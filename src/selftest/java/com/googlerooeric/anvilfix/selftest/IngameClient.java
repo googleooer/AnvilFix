@@ -11,7 +11,11 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AnvilScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.AnvilMenu;
+//? if >=26.1 {
+/*import net.minecraft.world.inventory.ContainerInput;
+*///?} else {
 import net.minecraft.world.inventory.ClickType;
+//?}
 import net.minecraft.world.item.ItemStack;
 
 import java.lang.reflect.Field;
@@ -68,17 +72,17 @@ public final class IngameClient {
         }
         tick++;
         if (tick > TIMEOUT_TICKS) {
-            fail("timeout", "test didn't finish in time (step " + stepIndex + ", screen " + minecraft.screen + ")");
+            fail("timeout", "test didn't finish in time (step " + stepIndex + ", screen " + TestClient.screen(minecraft) + ")");
             return finish();
         }
         if (nextStepAt < 0) {
             if (minecraft.player == null || minecraft.level == null) {
                 return false;
             }
-            if (minecraft.screen instanceof AnvilScreen) {
+            if (TestClient.screen(minecraft) instanceof AnvilScreen) {
                 buildSteps();
                 nextStepAt = tick + STEP_DELAY;
-            } else if (minecraft.screen == null && tick % 20 == 0) {
+            } else if (TestClient.screen(minecraft) == null && tick % 20 == 0) {
                 // In the world with nothing open: right-click the anvil the server put next to us
                 BlockPos anvil = findAnvil(minecraft);
                 if (anvil != null) {
@@ -86,7 +90,7 @@ public final class IngameClient {
                             new BlockHitResult(Vec3.atCenterOf(anvil), Direction.UP, anvil, false));
                 }
                 if (tick % 200 == 0) {
-                    SelfTest.LOGGER.info("ANVILFIX_INGAME waiting: at {}, anvil {}, screen {}", minecraft.player.blockPosition(), anvil, minecraft.screen);
+                    SelfTest.LOGGER.info("ANVILFIX_INGAME waiting: at {}, anvil {}, screen {}", minecraft.player.blockPosition(), anvil, TestClient.screen(minecraft));
                 }
             }
             return false;
@@ -151,7 +155,11 @@ public final class IngameClient {
     }
 
     private static void click(Minecraft minecraft, int slot) {
+        //? if >=26.1 {
+        /*minecraft.gameMode.handleContainerInput(menu(minecraft).containerId, slot, 0, ContainerInput.PICKUP, minecraft.player);
+        *///?} else {
         minecraft.gameMode.handleInventoryMouseClick(menu(minecraft).containerId, slot, 0, ClickType.PICKUP, minecraft.player);
+        //?}
     }
 
     /** Moves a stack between two empty-cursor states: pick it up from one slot and put it in another. */
@@ -166,14 +174,14 @@ public final class IngameClient {
             if (field.getType() == EditBox.class) {
                 try {
                     field.setAccessible(true);
-                    ((EditBox) field.get(minecraft.screen)).setValue(name);
+                    ((EditBox) field.get(TestClient.screen(minecraft))).setValue(name);
                     return;
                 } catch (ReflectiveOperationException e) {
                     throw new IllegalStateException(e);
                 }
             }
         }
-        throw new IllegalStateException("no rename box on " + minecraft.screen);
+        throw new IllegalStateException("no rename box on " + TestClient.screen(minecraft));
     }
 
     private static ItemStack output(Minecraft minecraft) {
