@@ -190,7 +190,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void vanillaIncompatibilitiesAreKept(TestContext ctx) {
         // AnvilFix-issues#3: Protection + Fire Protection
         new Anvil(ctx).put(enchanted(new ItemStack(Items.DIAMOND_CHESTPLATE), Enchantments.PROTECTION, 4), book(Enchantments.FIRE_PROTECTION, 4)).expectNoOutput();

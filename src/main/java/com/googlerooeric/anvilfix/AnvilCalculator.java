@@ -62,16 +62,19 @@ public final class AnvilCalculator {
         return ENCHANTMENT_COST_MAP.getOrDefault(enchantment, DEFAULT_ENCHANTMENT_COST);
     }
 
+    /**
+     * Vanilla's exclusivity rules (protection types, Silk Touch/Fortune, Infinity/Mending, ...) plus AnvilFix's
+     * Mending/Unbreaking rule. An enchantment is never incompatible with itself, since that's an upgrade.
+     */
     public static boolean areIncompatible(Enchantment e1, Enchantment e2, boolean mendingWorksWithUnbreaking) {
+        if (e1 == e2) {
+            return false;
+        }
         if (!mendingWorksWithUnbreaking
                 && (e1 == Enchantments.MENDING && e2 == Enchantments.UNBREAKING || e1 == Enchantments.UNBREAKING && e2 == Enchantments.MENDING)) {
             return true;
         }
-        return isDamageEnchantment(e1) && isDamageEnchantment(e2) && e1 != e2;
-    }
-
-    private static boolean isDamageEnchantment(Enchantment e) {
-        return e == Enchantments.SHARPNESS || e == Enchantments.SMITE || e == Enchantments.BANE_OF_ARTHROPODS;
+        return !e1.canCombine(e2);
     }
 
     /**
