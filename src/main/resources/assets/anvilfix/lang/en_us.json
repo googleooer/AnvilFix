@@ -1,0 +1,6 @@
+{
+  "gamerule.mendingWorksWithUnbreaking": "Mending works with Unbreaking",
+  "gamerule.mendingWorksWithUnbreaking.description": "Allow Mending and Unbreaking on the same item in an anvil",
+  "gamerule.anvilfix.mending_works_with_unbreaking": "Mending works with Unbreaking",
+  "gamerule.anvilfix.mending_works_with_unbreaking.description": "Allow Mending and Unbreaking on the same item in an anvil"
+}

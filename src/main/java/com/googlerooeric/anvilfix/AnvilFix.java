@@ -2,7 +2,13 @@ package com.googlerooeric.anvilfix;
 
 import net.minecraft.server.level.ServerLevel;
 //? if >=1.21.11 {
-/*import net.minecraft.world.level.gamerules.GameRule;
+/*import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.serialization.Codec;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.level.gamerules.GameRule;
+import net.minecraft.world.level.gamerules.GameRuleCategory;
+import net.minecraft.world.level.gamerules.GameRuleType;
+import net.minecraft.world.level.gamerules.GameRuleTypeVisitor;
 *///?} else {
 import net.minecraft.world.level.GameRules;
 //?}
@@ -30,6 +36,14 @@ public final class AnvilFix {
 
     private AnvilFix() {
     }
+
+    //? if >=1.21.11 {
+    /*/^* The rule as vanilla builds its own boolean rules, for loaders that register it through their registry events. ^/
+    public static GameRule<Boolean> createMendingRule() {
+        return new GameRule<>(GameRuleCategory.MISC, GameRuleType.BOOL, BoolArgumentType.bool(), GameRuleTypeVisitor::visitBoolean,
+                Codec.BOOL, value -> value ? 1 : 0, false, FeatureFlagSet.of());
+    }
+    *///?}
 
     public static boolean mendingWorksWithUnbreaking(ServerLevel level) {
         //? if >=1.21.11 {
