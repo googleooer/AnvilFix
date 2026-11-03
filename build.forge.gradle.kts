@@ -31,6 +31,10 @@ java {
 sourceSets.all {
     java.exclude("**/fabric/**", "**/neoforge/**")
     resources.exclude("fabric.mod.json", "META-INF/neoforge.mods.toml")
+    // Forge finds dev mods by directory, so classes and resources must land in the same one (as in the Forge MDK)
+    val dir = layout.buildDirectory.dir("sourceSets/$name")
+    output.setResourcesDir(dir)
+    java.destinationDirectory.set(dir)
 }
 
 val selftest: SourceSet by sourceSets.creating {
