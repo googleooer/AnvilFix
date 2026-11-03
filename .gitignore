@@ -119,3 +119,4 @@ run/
 
 # Release jars collected by scripts/collect-jars.sh
 dist/
+port-status.tsv
