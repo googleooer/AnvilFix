@@ -6,6 +6,36 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
+sourceSets {
+    gametest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+loom {
+    mods {
+        anvilfix {
+            sourceSet sourceSets.main
+        }
+        "anvilfix-gametest" {
+            sourceSet sourceSets.gametest
+        }
+    }
+
+    runs {
+        // Headless server that runs every @GameTest in the gametest source set and exits.
+        gametest {
+            server()
+            name "Game Test"
+            source sourceSets.gametest
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${project.buildDir}/gametest/junit.xml"
+            runDir "build/gametest"
+        }
+    }
+}
+
 repositories {
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
@@ -23,6 +53,9 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
+
+// `./gradlew build` runs the game tests too
+check.dependsOn "runGametest"
 
 processResources {
     inputs.property "version", project.version
