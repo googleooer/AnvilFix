@@ -9,7 +9,7 @@ version = "${version}"
 displayName = "AnvilFix"
 authors = "googler_ooeric"
 description = "Fixes and rebalances anvils."
-logoFile = "assets/anvilfix/icon.png"
+${logo_key} = "assets/anvilfix/icon.png"
 
 [[mixins]]
 config = "anvilfix.mixins.json"

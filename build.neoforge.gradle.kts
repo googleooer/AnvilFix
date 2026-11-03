@@ -89,6 +89,8 @@ val metadata = mapOf(
     "pack_format_fields" to property("pack_format").toString().let {
         if (stonecutter.eval(minecraft, ">=1.21.9")) "\"min_format\": $it, \"max_format\": $it" else "\"pack_format\": $it"
     },
+    // NeoForge 26.2 warns about logoFile and wants iconFile for square icons; older versions only know logoFile
+    "logo_key" to if (stonecutter.eval(minecraft, ">=26.2")) "iconFile" else "logoFile",
     // FML before NeoForge 20.4 only understands the old "mandatory" dependency flag
     "required" to "type = \"required\""
 )
