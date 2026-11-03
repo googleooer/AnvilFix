@@ -109,3 +109,8 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release = javaVersion
 }
+
+// LGPL-3.0: ship the license (and the GPL it builds on) inside the jar
+tasks.jar {
+    from(rootProject.files("LICENSE", "COPYING")) { into("META-INF") }
+}
