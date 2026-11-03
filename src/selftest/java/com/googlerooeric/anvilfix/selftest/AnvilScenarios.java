@@ -13,7 +13,6 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.ContainerSynchronizer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameRules;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,9 +48,12 @@ public final class AnvilScenarios {
         final Player player;
         final AnvilMenu menu;
         final BlockPos pos;
+        final ServerLevel level;
 
         Anvil(Context ctx) {
-            this.pos = ctx.level().getSharedSpawnPos().above(3);
+            this.level = ctx.level();
+            // Near the origin, where the spawn chunks are; the exact spot doesn't matter
+            this.pos = new BlockPos(0, 120, 0);
             this.player = TestItems.survivalPlayer(ctx.level());
             this.player.experienceLevel = 1000;
             this.menu = new AnvilMenu(0, player.getInventory(), ContainerLevelAccess.create(ctx.level(), pos));
@@ -90,12 +92,12 @@ public final class AnvilScenarios {
         }
 
         Anvil expectNoOutput() {
-            check(output().isEmpty(), "expected no output but got " + output() + " " + TestItems.describe(output()) + " for " + cost());
+            check(output().isEmpty(), "expected no output but got " + output() + " " + TestItems.describe(level, output()) + " for " + cost());
             return this;
         }
 
         Anvil expectLevel(String enchantment, int level) {
-            int actual = TestItems.level(output(), enchantment);
+            int actual = TestItems.level(this.level, output(), enchantment);
             check(actual == level, "expected " + enchantment + " " + level + " but level was " + actual);
             return this;
         }
@@ -116,13 +118,12 @@ public final class AnvilScenarios {
     }
 
     private static void withMendingRule(Context ctx, boolean value, Runnable body) {
-        GameRules.BooleanValue rule = ctx.level().getGameRules().getRule(AnvilFix.MENDING_WORKS_WITH_UNBREAKING);
-        boolean old = rule.get();
-        rule.set(value, ctx.server());
+        boolean old = AnvilFix.mendingWorksWithUnbreaking(ctx.level());
+        AnvilFix.setMendingWorksWithUnbreaking(ctx.level(), value);
         try {
             body.run();
         } finally {
-            rule.set(old, ctx.server());
+            AnvilFix.setMendingWorksWithUnbreaking(ctx.level(), old);
         }
     }
 
@@ -181,7 +182,7 @@ public final class AnvilScenarios {
                 new Anvil(ctx).put(TestItems.enchanted(ctx, sword(), MENDING, 1), TestItems.book(ctx, UNBREAKING, 3)).expectLevel(UNBREAKING, 3).expectCost(9))));
         s.add(new Scenario("mendingRuleDefaultsToFalse", ctx ->
                 // A fresh GameRules instance holds the registered default
-                check(!TestItems.freshGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING), "mendingWorksWithUnbreaking should default to false")));
+                check(!TestItems.defaultMendingRule(ctx), "mendingWorksWithUnbreaking should default to false")));
 
         // --- Repairing ---
 
@@ -270,9 +271,20 @@ public final class AnvilScenarios {
             Anvil anvil = new Anvil(ctx);
             List<Integer> sentCosts = new ArrayList<>();
             anvil.menu.setSynchronizer(new ContainerSynchronizer() {
+                //? if >=1.21.5 {
+                /*@Override
+                public void sendInitialData(AbstractContainerMenu menu, java.util.List<ItemStack> items, ItemStack carried, int[] data) {
+                }
+
+                @Override
+                public net.minecraft.world.inventory.RemoteSlot createSlot() {
+                    return net.minecraft.world.inventory.RemoteSlot.PLACEHOLDER;
+                }
+                *///?} else {
                 @Override
                 public void sendInitialData(AbstractContainerMenu menu, NonNullList<ItemStack> items, ItemStack carried, int[] data) {
                 }
+                //?}
 
                 @Override
                 public void sendSlotChange(AbstractContainerMenu menu, int slot, ItemStack stack) {

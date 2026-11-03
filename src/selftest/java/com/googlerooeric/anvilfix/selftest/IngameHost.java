@@ -102,7 +102,7 @@ public final class IngameHost {
         BlockPos pos = player.blockPosition().east(2);
         TestItems.serverLevel(player).setBlockAndUpdate(pos.below(), Blocks.STONE.defaultBlockState());
         TestItems.serverLevel(player).setBlockAndUpdate(pos, Blocks.ANVIL.defaultBlockState());
-        SelfTest.LOGGER.info("ANVILFIX_HOST set up {} with an anvil at {}", player.getGameProfile().getName(), pos);
+        SelfTest.LOGGER.info("ANVILFIX_HOST set up {} with an anvil at {}", player.getName().getString(), pos);
     }
 
     /** Sharpness V + Looting III + Fire Aspect II + Unbreaking III + Knockback II = 42 levels, past vanilla's 40 cap. */

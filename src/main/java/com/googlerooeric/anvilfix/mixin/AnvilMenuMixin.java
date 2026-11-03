@@ -3,6 +3,7 @@ package com.googlerooeric.anvilfix.mixin;
 import com.googlerooeric.anvilfix.AnvilCalculator;
 import com.googlerooeric.anvilfix.AnvilFix;
 import com.googlerooeric.anvilfix.Compat;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -29,9 +30,15 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 
     @Shadow private String itemName;
 
+    //? if >=1.21.2 {
+    /*public AnvilMenuMixin(@Nullable MenuType<?> type, int containerId, Inventory inventory, ContainerLevelAccess access, net.minecraft.world.inventory.ItemCombinerMenuSlotDefinition slots) {
+        super(type, containerId, inventory, access, slots);
+    }
+    *///?} else {
     public AnvilMenuMixin(@Nullable MenuType<?> type, int containerId, Inventory inventory, ContainerLevelAccess access) {
         super(type, containerId, inventory, access);
     }
+    //?}
 
     // Inject and cancel instead of @Overwrite so other mods can still inject into the vanilla body (AnvilFix-issues#1)
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
@@ -41,7 +48,7 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         // The server is authoritative: the client can't read server gamerules, so a client-side guess could
         // disagree with the server. The output slot and level cost reach the client through normal menu sync.
         Level level = Compat.level(this.player);
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -52,7 +59,8 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
             return;
         }
 
-        boolean mendingWorksWithUnbreaking = level.getGameRules().getBoolean(AnvilFix.MENDING_WORKS_WITH_UNBREAKING);
+        // Not client-side, so this is the server's level (only ServerLevel has game rules from 1.21.2)
+        boolean mendingWorksWithUnbreaking = AnvilFix.mendingWorksWithUnbreaking((ServerLevel) level);
         AnvilCalculator.Result result = AnvilCalculator.calculate(Compat.enchantments(level),
                 this.inputSlots.getItem(0), this.inputSlots.getItem(1), this.itemName, mendingWorksWithUnbreaking);
 

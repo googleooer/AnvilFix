@@ -210,7 +210,7 @@ public final class IngameClient {
         steps.add(mc -> {
             check("expensiveCost", menu(mc).getCost() == 42, "cost shown is " + menu(mc).getCost());
             check("expensiveLabelNotCapped", Integer.valueOf(42).equals(lastCostLabel), "label asked to show " + lastCostLabel + " (null means \"Too Expensive!\")");
-            check("expensiveOutput", TestItems.level(output(mc), "minecraft:sharpness") == 5, "output is " + output(mc) + " " + TestItems.describe(output(mc)));
+            check("expensiveOutput", TestItems.level(mc.level, output(mc), "minecraft:sharpness") == 5, "output is " + output(mc) + " " + TestItems.describe(mc.level, output(mc)));
             move(mc, OUTPUT, hotbar(8));
         });
         steps.add(mc -> {
@@ -223,7 +223,7 @@ public final class IngameClient {
         steps.add(mc -> move(mc, hotbar(IngameHost.MENDING_SWORD), LEFT));
         steps.add(mc -> move(mc, hotbar(IngameHost.UNBREAKING_BOOK), RIGHT));
         steps.add(mc -> {
-            check("mendingRuleNoOutput", output(mc).isEmpty(), "output is " + output(mc) + " " + TestItems.describe(output(mc)));
+            check("mendingRuleNoOutput", output(mc).isEmpty(), "output is " + output(mc) + " " + TestItems.describe(mc.level, output(mc)));
             check("mendingRuleNoCost", menu(mc).getCost() == 0, "cost shown is " + menu(mc).getCost());
             move(mc, LEFT, hotbar(IngameHost.MENDING_SWORD));
         });
