@@ -78,6 +78,17 @@ public final class AnvilCalculator {
     }
 
     /**
+     * Two equal levels make the next one (up to the max level), otherwise the higher level wins.
+     * Levels above the max, e.g. from commands, are kept rather than capped.
+     */
+    public static int combinedLevel(Enchantment enchantment, int currentLevel, int newLevel) {
+        if (currentLevel == newLevel && newLevel < enchantment.getMaxLevel()) {
+            return newLevel + 1;
+        }
+        return Math.max(currentLevel, newLevel);
+    }
+
+    /**
      * @param newItemName the name typed into the anvil, or null if the player never typed one
      */
     public static Result calculate(ItemStack inputItem, ItemStack enchantingItem, @Nullable String newItemName, boolean mendingWorksWithUnbreaking) {
@@ -158,33 +169,17 @@ public final class AnvilCalculator {
                         if (enchantment == null) continue;
 
                         int currentLevel = currentEnchants.getOrDefault(enchantment, 0);
-                        int newLevel = newEnchants.getOrDefault(enchantment, 0);
-                        int finalLevel;
+                        int resultLevel = combinedLevel(enchantment, currentLevel, newEnchants.get(enchantment));
 
-                        // If the current level and new level are the same, increment the final level
-                        if (currentLevel <= newLevel && currentLevel < enchantment.getMaxLevel()) {
-                            finalLevel = currentLevel + 1;
-                        } else {
-                            finalLevel = Math.max(newLevel, currentLevel);
-                        }
+                        // Skip enchantments the item can't take, that conflict with what it has, or that wouldn't go up
+                        if (!enchantment.isAcceptableItem(inputItem) || resultLevel <= currentLevel) continue;
+                        boolean hasIncompatibleEnchantments = currentEnchants.keySet().stream()
+                                .anyMatch(enchant -> areIncompatible(enchantment, enchant, mendingWorksWithUnbreaking));
+                        if (hasIncompatibleEnchantments) continue;
 
-                        // If enchantment is acceptable on item
-                        if (enchantment.isAcceptableItem(inputItem)) {
-
-                            // Check for incompatible enchantments
-                            boolean hasIncompatibleEnchantments = currentEnchants.keySet().stream()
-                                    .anyMatch(enchant -> areIncompatible(enchantment, enchant, mendingWorksWithUnbreaking));
-
-                            // If there are no incompatible enchantments, add the enchantment
-                            if (!hasIncompatibleEnchantments) {
-                                if (currentEnchants.containsKey(enchantment) && finalLevel > currentEnchants.get(enchantment)) {
-                                    totalCost += baseCost(enchantment) * finalLevel;
-                                } else if (!currentEnchants.containsKey(enchantment)) {
-                                    totalCost += baseCost(enchantment) * Math.max(finalLevel, newLevel);
-                                }
-                                currentEnchants.put(enchantment, Math.max(finalLevel, newLevel));
-                            }
-                        }
+                        // Charge for the level the item ends up with: base cost x level
+                        currentEnchants.put(enchantment, resultLevel);
+                        totalCost += baseCost(enchantment) * resultLevel;
                     }
                 }
             }

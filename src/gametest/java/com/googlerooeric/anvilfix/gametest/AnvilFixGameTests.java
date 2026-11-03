@@ -140,7 +140,7 @@ public class AnvilFixGameTests implements FabricGameTest {
         ctx.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, required = false) // known bug, fixed later on this branch
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void upgradeCostsResultingLevel(TestContext ctx) {
         // Sharpness I sword + Sharpness III book gives Sharpness III, which costs 2 x 3
         Anvil anvil = new Anvil(ctx).put(enchanted(new ItemStack(Items.DIAMOND_SWORD), Enchantments.SHARPNESS, 1), book(Enchantments.SHARPNESS, 3));
