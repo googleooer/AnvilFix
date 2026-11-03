@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "anvilfix_selftest",
+  "version": "1.0.0",
+  "name": "AnvilFix Self Test",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.googlerooeric.anvilfix.selftest.fabric.SelfTestFabric"
+    ],
+    "client": [
+      "com.googlerooeric.anvilfix.selftest.fabric.SelfTestFabric"
+    ]
+  },
+  "mixins": [
+    "anvilfix_selftest.mixins.json"
+  ],
+  "depends": {
+    "anvilfix": "*"
+  }
+}

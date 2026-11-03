@@ -3,22 +3,21 @@
   "id": "anvilfix",
   "version": "${version}",
   "name": "AnvilFix",
-  "description": "Fixes and rebalaces anvils.",
+  "description": "Fixes and rebalances anvils.",
   "authors": [
     "googler_ooeric"
   ],
   "contact": {
-    "website": "https://modrinth.com/mod/anvilfix"
+    "homepage": "https://modrinth.com/mod/anvilfix",
+    "sources": "https://github.com/googleooer/AnvilFix",
+    "issues": "https://github.com/googleooer/AnvilFix-issues/issues"
   },
   "license": "LGPL-3.0",
   "icon": "assets/anvilfix/icon.png",
   "environment": "*",
   "entrypoints": {
-    "client": [
-      "com.googlerooeric.anvilfix.client.AnvilFixClient"
-    ],
     "main": [
-      "com.googlerooeric.anvilfix.AnvilFix"
+      "com.googlerooeric.anvilfix.fabric.AnvilFixFabric"
     ]
   },
   "mixins": [
@@ -26,7 +25,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.14.6",
-    "fabric": "*",
-    "minecraft": ">=1.19 <1.19.3"
+    "fabric-game-rule-api-v1": "*",
+    "minecraft": "${minecraft}"
   }
 }
