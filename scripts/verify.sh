@@ -30,18 +30,14 @@ record() { # node build selftest ingame scenarios checks
     rmdir "$status_file.lock"
 }
 
-# Drop what each node's run regenerates anyway, so all ~80 nodes fit on disk (KEEP_CACHES=1 to skip)
+# Drop what each node's run regenerates anyway, so all ~80 nodes fit on disk (KEEP_CACHES=1 to skip). Only
+# per-node files go here: the shared ForgeGradle/NeoForm caches may be in use by another lane, so clear those
+# between runs instead (scripts/sweep.sh does).
 cleanup() { # node
     [ "${KEEP_CACHES:-0}" = 1 ] && return
-    local mc="${1%-*}"
-    case "$1" in
-        *-forge|*-neoforge)
-            rm -rf "versions/$1/build/moddev" "versions/$1/build/neoForm" "versions/$1/build/selftest-run/world" ;;
-        *)
-            rm -rf "versions/$1/build/selftest-run/world" ;;
-    esac
-    # Under 8 GB free, also drop Loom's copy of this Minecraft version
-    if [ "$(df -g . | awk 'NR==2 {print $4}')" -lt 8 ]; then rm -rf ~/.gradle/caches/fabric-loom/"$mc"; fi
+    rm -rf "versions/$1/build/moddev" "versions/$1/build/neoForm" "versions/$1/build/selftest-run/world"
+    # Loom keeps a copy of each Minecraft version that only this node uses
+    case "$1" in *-fabric) rm -rf ~/.gradle/caches/fabric-loom/"${1%-*}" ;; esac
 }
 
 verify_node() { # node lane

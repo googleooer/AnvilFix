@@ -1,6 +1,0 @@
-node	build	selftest	launch	note
-1.19-fabric	pass	pass	pass	26 passed, 0 failed
-1.19.1-fabric	pass	pass	pass	26 passed, 0 failed
-1.19.1-forge	pass	pass	pass	26 passed, 0 failed
-1.19.2-fabric	pass	pass	pass	26 passed, 0 failed
-1.19.2-forge	pass	pass	pass	26 passed, 0 failed
