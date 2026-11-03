@@ -2,7 +2,11 @@ package com.googlerooeric.anvilfix.selftest;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
+//? if >=1.19.3 {
+/*import net.minecraft.core.registries.BuiltInRegistries;
+*///?} else {
 import net.minecraft.core.Registry;
+//?}
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -27,7 +31,11 @@ final class TestItems {
     /** A plain survival player. The anvil checks its abilities (instabuild), not a game mode. */
     static Player survivalPlayer(ServerLevel level) {
         GameProfile profile = new GameProfile(UUID.randomUUID(), "anvilfix-test");
+        //? if >=1.19.3 {
+        /*return new Player(level, BlockPos.ZERO, 0.0f, profile) {
+        *///?} else {
         return new Player(level, BlockPos.ZERO, 0.0f, profile, null) {
+        //?}
             @Override
             public boolean isSpectator() {
                 return false;
@@ -45,7 +53,11 @@ final class TestItems {
     }
 
     private static Enchantment enchantment(String id) {
+        //? if >=1.19.3 {
+        /*Enchantment enchantment = BuiltInRegistries.ENCHANTMENT.get(new ResourceLocation(id));
+        *///?} else {
         Enchantment enchantment = Registry.ENCHANTMENT.get(new ResourceLocation(id));
+        //?}
         AnvilScenarios.check(enchantment != null, "unknown enchantment " + id);
         return enchantment;
     }
@@ -74,7 +86,11 @@ final class TestItems {
 
     static String describe(ItemStack stack) {
         Map<String, Integer> named = new LinkedHashMap<>();
+        //? if >=1.19.3 {
+        /*EnchantmentHelper.getEnchantments(stack).forEach((e, l) -> named.put(String.valueOf(BuiltInRegistries.ENCHANTMENT.getKey(e)), l));
+        *///?} else {
         EnchantmentHelper.getEnchantments(stack).forEach((e, l) -> named.put(String.valueOf(Registry.ENCHANTMENT.getKey(e)), l));
+        //?}
         return named.toString();
     }
 }

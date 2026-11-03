@@ -1,6 +1,10 @@
 package com.googlerooeric.anvilfix;
 
+//? if >=1.19.3 {
+/*import net.minecraft.core.registries.BuiltInRegistries;
+*///?} else {
 import net.minecraft.core.Registry;
+//?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.EnchantedBookItem;
@@ -58,7 +62,11 @@ public final class Compat {
 
         @Override
         public String id(Enchantment enchantment) {
+            //? if >=1.19.3 {
+            /*return String.valueOf(BuiltInRegistries.ENCHANTMENT.getKey(enchantment));
+            *///?} else {
             return String.valueOf(Registry.ENCHANTMENT.getKey(enchantment));
+            //?}
         }
 
         @Override
@@ -111,6 +119,10 @@ public final class Compat {
     }
 
     public static Level level(Player player) {
+        //? if >=1.20 {
+        /*return player.level();
+        *///?} else {
         return player.level;
+        //?}
     }
 }
