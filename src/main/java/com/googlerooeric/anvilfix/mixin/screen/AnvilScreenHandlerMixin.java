@@ -14,8 +14,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
 
@@ -72,12 +75,10 @@ public abstract class AnvilScreenHandlerMixin
 
 
 
-    /**
-     * @author googler_ooeric
-     * @reason Fix repairing, renaming, and enchanting.
-     */
-    @Overwrite
-    public void updateResult() {
+    // Inject and cancel instead of @Overwrite so other mods can still inject into the vanilla body (AnvilFix-issues#1)
+    @Inject(method = "updateResult", at = @At("HEAD"), cancellable = true)
+    private void anvilfix$updateResult(CallbackInfo ci) {
+        ci.cancel();
 
         ENCHANTMENT_COMPATIBILITY_MAP = new HashMap<>();
 
@@ -277,13 +278,10 @@ public abstract class AnvilScreenHandlerMixin
 
 
 
-    /**
-     * @author googler_ooeric
-     * @reason Make it so repairing doesn't increase cost.
-     */
-    @Overwrite
-    public static int getNextCost(int cost) {
-        return cost; // Return the cost as it is
+    // Make it so repairing doesn't increase cost.
+    @Inject(method = "getNextCost", at = @At("HEAD"), cancellable = true)
+    private static void anvilfix$getNextCost(int cost, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue(cost); // Return the cost as it is
     }
 
 }

@@ -9,6 +9,9 @@
       "com.googlerooeric.anvilfix.gametest.AnvilFixGameTests"
     ]
   },
+  "mixins": [
+    "anvilfix-gametest.mixins.json"
+  ],
   "depends": {
     "anvilfix": "*",
     "fabric-gametest-api-v1": "*"
