@@ -84,6 +84,9 @@ public final class IngameHost {
     private void setUp(ServerPlayer player) {
         AnvilScenarios.Context ctx = new AnvilScenarios.Context(server);
         player.setGameMode(GameType.SURVIVAL);
+        // Mobs spawn on the flat test world at night; still survival for the anvil, which only checks instabuild
+        player.getAbilities().invulnerable = true;
+        player.onUpdateAbilities();
         player.setExperienceLevels(START_LEVELS);
         Inventory inventory = player.getInventory();
         inventory.clearContent();
