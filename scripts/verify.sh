@@ -8,12 +8,13 @@
 #             as the launch check
 #
 # Usage: scripts/verify.sh [-j LANES] 1.19-fabric [1.19-forge ...]
+#   CLIENT_TASK=runVanillaClient runs the in-game test from a client without AnvilFix (Fabric nodes).
 #   -j N runs N nodes at a time; each lane has its own server port and client game directory.
 set -u
 cd "$(dirname "$0")/.."
 export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 25)}"
-status_file=port-status.tsv
-logs=build/verify-logs
+status_file="${VERIFY_STATUS:-port-status.tsv}"
+logs="${VERIFY_LOGS:-build/verify-logs}"
 header='node\tbuild\tselftest\tingame\tscenarios\tingame checks\n'
 mkdir -p "$logs"
 [ -f "$status_file" ] || printf "$header" > "$status_file"
@@ -57,7 +58,7 @@ verify_node() { # node lane
             sleep 3
         done
         if grep -q ANVILFIX_HOST_READY "$server_log"; then
-            if timeout 900 ./gradlew ":$node:runClientSmoke" -Panvilfix.ingame=true "${props[@]}" > "$client_log" 2>&1 \
+            if timeout 900 ./gradlew ":$node:${CLIENT_TASK:-runClientSmoke}" -Panvilfix.ingame=true "${props[@]}" > "$client_log" 2>&1 \
                 && grep -q ANVILFIX_SMOKE_OK "$client_log"; then ingame=pass; else ingame=fail; fi
         fi
         wait "$server"

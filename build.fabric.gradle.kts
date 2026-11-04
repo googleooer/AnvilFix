@@ -38,6 +38,15 @@ val selftest: SourceSet by sourceSets.creating {
     runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
 }
 
+// A client that has the test mod but not AnvilFix: AnvilFix's classes are there as a plain library (the test code uses
+// them), but without its fabric.mod.json the loader never loads it as a mod, so none of its mixins apply. That's what a
+// player without AnvilFix brings to an AnvilFix server.
+val vanillaClient: SourceSet by sourceSets.creating {
+    val main = sourceSets.main.get()
+    runtimeClasspath = selftest.output + main.output.classesDirs +
+        main.runtimeClasspath.filter { it != main.output.resourcesDir && it !in main.output.classesDirs }
+}
+
 repositories {
 }
 
@@ -70,6 +79,17 @@ loom {
             vmArg("-Danvilfix.selftest.report=${layout.buildDirectory.file("selftest/junit.xml").get().asFile}")
             programArg("--nogui")
             runDir = "build/selftest-run"
+        }
+        // scripts/verify.sh with CLIENT_TASK=runVanillaClient: the in-game test from a client without AnvilFix
+        register("vanillaClient") {
+            client()
+            configName = "Client Without AnvilFix"
+            source(vanillaClient)
+            vmArg("-Danvilfix.smoke=true")
+            vmArg("-Danvilfix.vanillaClient=true")
+            runDir = clientDir.relativeTo(projectDir).path
+            if (ingame) vmArg("-Danvilfix.ingame=true")
+            vmArg("-Danvilfix.port=$testPort")
         }
         // Real client: checks the client mixins apply, then quits
         register("clientSmoke") {

@@ -15,3 +15,11 @@ for n in $(ls versions | sort -t. -k1,1n -k2,2n -k3,3n); do
     fi
 done
 echo "$(ls dist | wc -l | tr -d ' ') jars in dist/, $missing missing"
+
+# Release jars must not contain any of the test code (src/selftest) or its hooks
+leaks=0
+for jar in dist/*.jar; do
+    if unzip -l "$jar" | awk '{print $4}' | grep -q -E 'selftest|/selftest/'; then echo "test files in $jar"; leaks=1; fi
+    if unzip -p "$jar" 2>/dev/null | grep -a -q -E 'anvilfix\.(smoke|ingame|host|vanillaClient|selftest|port)|AnvilScenarios|IngameClient'; then echo "test code in $jar"; leaks=1; fi
+done
+[ "$leaks" = 0 ] && echo "no test code in the release jars" || exit 1

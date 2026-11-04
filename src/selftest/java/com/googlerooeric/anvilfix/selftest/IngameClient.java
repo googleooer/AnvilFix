@@ -65,6 +65,11 @@ public final class IngameClient {
         return Boolean.getBoolean("anvilfix.ingame");
     }
 
+    /** Running without AnvilFix on the client (runVanillaClient), against an AnvilFix server. */
+    static boolean vanillaClient() {
+        return Boolean.getBoolean("anvilfix.vanillaClient");
+    }
+
     /** @return true once the test is over and the client may quit */
     public static boolean tick(Minecraft minecraft) {
         if (finished) {
@@ -211,13 +216,18 @@ public final class IngameClient {
 
         // 2. 42 levels: past vanilla's 40, the label must show the cost instead of "Too Expensive!"
         steps.add(mc -> move(mc, hotbar(IngameHost.EXPENSIVE_SWORD), LEFT));
-        steps.add(mc -> {
-            lastCostLabel = null;
-            move(mc, hotbar(IngameHost.EXPENSIVE_BOOK), RIGHT);
-        });
+        steps.add(mc -> move(mc, hotbar(IngameHost.EXPENSIVE_BOOK), RIGHT));
+        // Once the server's cost has arrived, forget what earlier frames drew (a client without AnvilFix briefly
+        // shows its own vanilla guess) and look at what the next frames draw
+        steps.add(mc -> lastCostLabel = null);
         steps.add(mc -> {
             check("expensiveCost", menu(mc).getCost() == 42, "cost shown is " + menu(mc).getCost());
-            check("expensiveLabelNotCapped", Integer.valueOf(42).equals(lastCostLabel), "label asked to show " + lastCostLabel + " (null means \"Too Expensive!\")");
+            if (vanillaClient()) {
+                // Known limitation: the label is drawn client-side, so a client without AnvilFix still caps it
+                check("expensiveLabelCappedWithoutAnvilFix", lastCostLabel == null, "label asked to show " + lastCostLabel);
+            } else {
+                check("expensiveLabelNotCapped", Integer.valueOf(42).equals(lastCostLabel), "label asked to show " + lastCostLabel + " (null means \"Too Expensive!\")");
+            }
             check("expensiveOutput", TestItems.level(mc.level, output(mc), "minecraft:sharpness") == 5, "output is " + output(mc) + " " + TestItems.describe(mc.level, output(mc)));
             move(mc, OUTPUT, hotbar(8));
         });
