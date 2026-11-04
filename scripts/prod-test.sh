@@ -44,7 +44,8 @@ test_node() { # node lane
     # The release jar and the test mod built for production
     local task=selftestJar
     [ "$loader" = fabric ] && [ -z "$(echo "$mc" | grep '^26')" ] && task=remapSelftestJar
-    [ "$loader" = forge ] && [ "$(printf '%s\n' "$mc" 1.20.1 | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = 1.20.1 ] && task=reobfSelftestJar
+    # Forge before 1.20.6 runs on SRG names, so its test mod is reobfuscated too
+    [ "$loader" = forge ] && [ "$(printf '%s\n' "$mc" 1.20.5 | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = 1.20.5 ] && task=reobfSelftestJar
     if ! ./gradlew ":$node:build" ":$node:$task" -q > "$log" 2>&1; then echo "$node	fail	build" >> "$results"; echo "$node build failed"; return; fi
     cp "$(ls versions/$node/build/libs/*.jar | grep -v -E -- '-(sources|dev|selftest|selftest-dev)\.jar$' | head -1)" "$dir/mods/"
     cp "versions/$node/build/libs/"*-selftest.jar "$dir/mods/"

@@ -1,3 +1,5 @@
+import java.util.zip.GZIPInputStream
+
 // Forge 1.20.2+, through ForgeGradle 7 (Mojang names at runtime, so no refmaps or reobfuscation)
 plugins {
     // ForgeGradle registers Eclipse run configurations next to every run task
@@ -18,6 +20,8 @@ base.archivesName = property("archives_base_name").toString()
 val hostTest = findProperty("anvilfix.host") == "true"
 val ingame = findProperty("anvilfix.ingame") == "true"
 val testPort = findProperty("anvilfix.port")?.toString() ?: "25599"
+// Forge before 1.20.6 runs on SRG names in production (see the reobf section below)
+val srgRuntime = stonecutter.eval(mcVersion, "<1.20.6")
 // Each parallel verify lane runs its client in its own game directory
 val clientDir = findProperty("anvilfix.clientDir")?.toString()?.let { file(it) } ?: rootProject.file("run")
 
@@ -58,8 +62,94 @@ findProperty("force_dependencies")?.toString()?.split(",")?.map { it.trim() }?.l
     configurations.all { resolutionStrategy.force(*pins.toTypedArray()) }
 }
 
+val forgeDependency = minecraft.dependency("net.minecraftforge:forge:$mcVersion-${property("forge_version")}")
+
 dependencies {
-    implementation(minecraft.dependency("net.minecraftforge:forge:$mcVersion-${property("forge_version")}"))
+    implementation(forgeDependency)
+}
+
+// Forge before 1.20.6 still runs on SRG names in production, and ForgeGradle 7 leaves reobfuscation to the build
+// script: give the mixins an SRG refmap and remap the jar with ForgeAutoRenamingTool, like ForgeGradle 6 did.
+if (srgRuntime) {
+    val reobfDir = layout.buildDirectory.dir("reobf")
+    val mapFile = reobfDir.map { it.file("map2srg.tsrg") }
+    val refmapFile = reobfDir.map { it.file("anvilfix.refmap.json") }
+
+    // ForgeGradle hands out tsrg2; the 0.8.5 Mixin processor reads tsrg v1, which is tsrg2 minus its header and the
+    // doubly-indented static/parameter lines
+    val srgMappings by tasks.registering {
+        val source = forgeDependency.toSrgFile
+        inputs.file(source)
+        outputs.file(mapFile)
+        doLast {
+            val lines = GZIPInputStream(source.get().inputStream()).bufferedReader().readLines()
+            mapFile.get().asFile.writeText(lines.drop(1).filterNot { it.startsWith("\t\t") }.joinToString("\n", postfix = "\n"))
+        }
+    }
+
+    val art by configurations.creating
+    dependencies {
+        annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+        art("net.minecraftforge:ForgeAutoRenamingTool:1.1.2:all") { isTransitive = false }
+    }
+
+    tasks.compileJava {
+        dependsOn(srgMappings)
+        options.compilerArgs.addAll(listOf(
+            "-AreobfTsrgFile=${mapFile.get().asFile}",
+            "-AoutRefMapFile=${refmapFile.get().asFile}",
+            "-AmappingTypes=tsrg",
+            "-AdefaultObfuscationEnv=searge",
+        ))
+    }
+
+    tasks.processResources {
+        // Gradle doesn't see filter lambdas, so declare the change for up-to-date checks
+        inputs.property("srgRefmap", true)
+        filesMatching("anvilfix.mixins.json") { filter { it.replace("\"package\"", "\"refmap\": \"anvilfix.refmap.json\",\n  \"package\"") } }
+    }
+
+    // The Mojang-named jar goes to devlibs; the SRG one becomes the release jar
+    tasks.jar {
+        dependsOn(tasks.compileJava)
+        from(refmapFile)
+        destinationDirectory = layout.buildDirectory.dir("devlibs")
+    }
+
+    val gameJava = javaVersion
+    val reobfJar by tasks.registering(JavaExec::class) {
+        val input = tasks.jar.flatMap { it.archiveFile }
+        val output = layout.buildDirectory.file("libs/${base.archivesName.get()}-${project.version}.jar")
+        inputs.file(input)
+        inputs.file(mapFile)
+        outputs.file(output)
+        dependsOn(srgMappings)
+        classpath = art
+        mainClass = "net.minecraftforge.fart.Main"
+        javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(gameJava)) })
+        argumentProviders.add(CommandLineArgumentProvider {
+            listOf("--input", input.get().asFile.path, "--output", output.get().asFile.path, "--map", mapFile.get().asFile.path) +
+                sourceSets.main.get().compileClasspath.files.flatMap { listOf("--lib", it.path) }
+        })
+    }
+    tasks.assemble { dependsOn(reobfJar) }
+
+    // The production test mod needs the same remapping (scripts/prod-test.sh)
+    tasks.register<JavaExec>("reobfSelftestJar") {
+        val input = tasks.named<Jar>("selftestJar").flatMap { it.archiveFile }
+        val output = layout.buildDirectory.file("libs/${base.archivesName.get()}-${project.version}-selftest.jar")
+        inputs.file(input)
+        inputs.file(mapFile)
+        outputs.file(output)
+        dependsOn(srgMappings)
+        classpath = art
+        mainClass = "net.minecraftforge.fart.Main"
+        javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(gameJava)) })
+        argumentProviders.add(CommandLineArgumentProvider {
+            listOf("--input", input.get().asFile.path, "--output", output.get().asFile.path, "--map", mapFile.get().asFile.path) +
+                (sourceSets.main.get().compileClasspath.files + sourceSets.main.get().output.files).flatMap { listOf("--lib", it.path) }
+        })
+    }
 }
 
 minecraft {
@@ -155,7 +245,7 @@ tasks.jar {
 // Production build of the test mod for scripts/prod-test.sh: same scenarios, without its own mixins (those only
 // matter for the dev-side checks and would need their own refmaps here)
 val selftestJar by tasks.registering(Jar::class) {
-    archiveClassifier = "selftest"
+    archiveClassifier = if (srgRuntime) "selftest-dev" else "selftest"
     from(selftest.output)
     exclude("anvilfix_selftest.mixins.json", "com/googlerooeric/anvilfix/selftest/mixin/**")
     filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
@@ -172,7 +262,7 @@ modrinth {
     versionNumber = project.version.toString()
     versionName = "AnvilFix ${property("mod_version")} (Forge $mcVersion)"
     versionType = "release"
-    uploadFile.set(tasks.jar)
+    uploadFile.set(if (srgRuntime) tasks.named("reobfJar") else tasks.jar)
     gameVersions.add(mcVersion)
     loaders.add("forge")
     // This version's section of CHANGELOG.md
