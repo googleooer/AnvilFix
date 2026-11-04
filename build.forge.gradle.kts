@@ -161,6 +161,8 @@ minecraft {
                 register("anvilfix") { source(sourceSets.main.get()) }
                 register("anvilfix_selftest") { source(selftest) }
             }
+            // The SRG refmap is for production; dev runs use Mojang names directly
+            if (srgRuntime) systemProperty("mixin.env.disableRefMap", "true")
             // In dev there's no jar manifest to list the mixin configs, so pass them like ForgeGradle 6 did
             args("--mixin.config", "anvilfix.mixins.json", "--mixin.config", "anvilfix_selftest.mixins.json")
             // Forge before 1.20.6 reads them from MOD_CLASSES, which its run configs leave to the build tool to set
