@@ -14,5 +14,5 @@ if [ -z "${MODRINTH_TOKEN:-}" ]; then
     export MODRINTH_TOKEN
 fi
 # --continue: one failed upload shouldn't stop the others; Gradle lists any failures at the end
-./gradlew modrinth --continue "${dry[@]}" 2>&1 | tee build/modrinth-upload.log | grep -E "Successfully uploaded|Not going to upload|FAILED|What went wrong|BUILD"
+./gradlew modrinth --continue ${dry[@]+"${dry[@]}"} 2>&1 | tee build/modrinth-upload.log | grep -E "Successfully uploaded|Not going to upload|FAILED|What went wrong|BUILD"
 echo "Uploaded versions: $(grep -c 'Successfully uploaded' build/modrinth-upload.log || true)"
