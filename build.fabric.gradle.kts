@@ -152,6 +152,8 @@ val remapSelftestJar by tasks.registering(net.fabricmc.loom.task.RemapJarTask::c
 modrinth {
     token = providers.environmentVariable("MODRINTH_TOKEN")
     projectId = "anvilfix"
+    // -PmodrinthDryRun=true prints what would be uploaded without contacting Modrinth
+    debugMode = findProperty("modrinthDryRun") == "true"
     versionNumber = project.version.toString()
     versionName = "AnvilFix ${property("mod_version")} (Fabric $minecraft)"
     versionType = "release"

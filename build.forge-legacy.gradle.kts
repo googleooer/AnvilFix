@@ -147,6 +147,8 @@ obfuscation {
 modrinth {
     token = providers.environmentVariable("MODRINTH_TOKEN")
     projectId = "anvilfix"
+    // -PmodrinthDryRun=true prints what would be uploaded without contacting Modrinth
+    debugMode = findProperty("modrinthDryRun") == "true"
     versionNumber = project.version.toString()
     versionName = "AnvilFix ${property("mod_version")} (Forge $minecraft)"
     versionType = "release"

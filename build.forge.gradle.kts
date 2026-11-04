@@ -275,13 +275,18 @@ val selftestJar by tasks.registering(Jar::class) {
 modrinth {
     token = providers.environmentVariable("MODRINTH_TOKEN")
     projectId = "anvilfix"
+    // -PmodrinthDryRun=true prints what would be uploaded without contacting Modrinth
+    debugMode = findProperty("modrinthDryRun") == "true"
     versionNumber = project.version.toString()
     versionName = "AnvilFix ${property("mod_version")} (Forge $mcVersion)"
     versionType = "release"
-    uploadFile.set(if (srgRuntime) tasks.named("reobfJar") else tasks.jar)
+    // On SRG-era Forge the release jar is reobfJar's output, not the jar task's
+    uploadFile.set(if (srgRuntime) layout.buildDirectory.file("libs/${base.archivesName.get()}-${project.version}.jar") else tasks.jar)
     gameVersions.add(mcVersion)
     loaders.add("forge")
     // This version's section of CHANGELOG.md
     changelog = rootProject.file("CHANGELOG.md").readText()
         .substringAfter("## ${property("mod_version")}\n").substringBefore("\n## ").trim()
 }
+
+if (srgRuntime) tasks.named("modrinth") { dependsOn("reobfJar") }
