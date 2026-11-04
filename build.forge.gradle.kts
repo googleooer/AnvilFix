@@ -74,6 +74,9 @@ if (srgRuntime) {
     val reobfDir = layout.buildDirectory.dir("reobf")
     val mapFile = reobfDir.map { it.file("map2srg.tsrg") }
     val refmapFile = reobfDir.map { it.file("anvilfix.refmap.json") }
+    // The processor also lists the SRG names of the mixins' own @Shadow members; ART needs those on top of Minecraft's
+    val mixinMapFile = reobfDir.map { it.file("mixin-members.tsrg") }
+    val combinedMapFile = reobfDir.map { it.file("map2srg-with-mixins.tsrg") }
 
     // ForgeGradle hands out tsrg2; the 0.8.5 Mixin processor reads tsrg v1, which is tsrg2 minus its header and the
     // doubly-indented static/parameter lines
@@ -98,6 +101,7 @@ if (srgRuntime) {
         options.compilerArgs.addAll(listOf(
             "-AreobfTsrgFile=${mapFile.get().asFile}",
             "-AoutRefMapFile=${refmapFile.get().asFile}",
+            "-AoutTsrgFile=${mixinMapFile.get().asFile}",
             "-AmappingTypes=tsrg",
             "-AdefaultObfuscationEnv=searge",
         ))
@@ -116,19 +120,29 @@ if (srgRuntime) {
         destinationDirectory = layout.buildDirectory.dir("devlibs")
     }
 
+    val combinedMappings by tasks.registering {
+        dependsOn(tasks.compileJava)
+        inputs.files(mapFile, mixinMapFile)
+        outputs.file(combinedMapFile)
+        doLast {
+            val mixins = mixinMapFile.get().asFile
+            combinedMapFile.get().asFile.writeText(mapFile.get().asFile.readText() + (if (mixins.exists()) mixins.readText() else ""))
+        }
+    }
+
     val gameJava = javaVersion
     val reobfJar by tasks.registering(JavaExec::class) {
         val input = tasks.jar.flatMap { it.archiveFile }
         val output = layout.buildDirectory.file("libs/${base.archivesName.get()}-${project.version}.jar")
         inputs.file(input)
-        inputs.file(mapFile)
+        inputs.file(combinedMapFile)
         outputs.file(output)
-        dependsOn(srgMappings)
+        dependsOn(combinedMappings)
         classpath = art
         mainClass = "net.minecraftforge.fart.Main"
         javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(gameJava)) })
         argumentProviders.add(CommandLineArgumentProvider {
-            listOf("--input", input.get().asFile.path, "--output", output.get().asFile.path, "--map", mapFile.get().asFile.path) +
+            listOf("--input", input.get().asFile.path, "--output", output.get().asFile.path, "--map", combinedMapFile.get().asFile.path) +
                 sourceSets.main.get().compileClasspath.files.flatMap { listOf("--lib", it.path) }
         })
     }
