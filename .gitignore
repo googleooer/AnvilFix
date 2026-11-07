@@ -120,3 +120,8 @@ run/
 # Release jars collected by scripts/collect-jars.sh
 dist/
 port-status.tsv
+
+# Working notes kept out of the repo
+PORT_PLAN.md
+PORT_STATUS.md
+TESTING.md
